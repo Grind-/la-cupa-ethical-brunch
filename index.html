@@ -3,26 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>La Cupa – Ethical Brunch</title>
+  <title>La Cupa Ethical Brunch</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .lang-selector {
-      position: absolute;
-      right: 22px;
-      top: 18px;
-      z-index: 1100;
-    }
-    .lang-selector select {
-      padding: 3px 9px;
-      border-radius: 11px;
-      border: 1px solid #850101;
-      background: #fffbe7;
-      color: #850101;
-      font-weight: bold;
-      font-size: 1.02rem;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vina+Sans:wght@400;700&family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="lang-selector">
@@ -35,71 +20,73 @@
   <header>
     <div class="container header-flex">
       <div class="logo-title">
-        <div class="logo-placeholder">🍳</div>
-        <h1>La Cupa</h1>
+        <img src="https://lacupaethicalbrunch.com/wp-content/uploads/2026/03/cropped-la-cupa-ethical-brunch-logo.png" alt="La Cupa Logo" style="height:70px;width:auto;">
+        <h1 style="font-family: 'Vina Sans', display; font-size: 2.4rem; letter-spacing: 0.08em; color:#690000;">La Cupa Ethical Brunch</h1>
       </div>
       <nav>
         <ul>
           <li><a href="#home" id="nav_home">Home</a></li>
-          <li><a href="#menu" id="nav_menu">Menü</a></li>
-          <li><a href="#about" id="nav_about">Über uns</a></li>
-          <li><a href="#contact" id="nav_contact">Kontakt</a></li>
+          <li><a href="#menu" id="nav_menu">Menu</a></li>
+          <li><a href="#about" id="nav_about">About us</a></li>
+          <li><a href="#contact" id="nav_contact">Contact</a></li>
         </ul>
       </nav>
     </div>
   </header>
+
   <main>
-    <section class="hero" id="home">
+    <section class="hero" id="home" style="background:#fffbe7;padding-top:60px;padding-bottom:40px;text-align:center;">
       <div class="container">
-        <h2 id="hero_title">Willkommen bei La Cupa – Ethical Brunch</h2>
-        <p id="hero_text">Genießen Sie nachhaltigen Brunch mit regionalen Bio-Zutaten in stilvoller Atmosphäre!</p>
+        <h2 id="hero_title">Welcome to La Cupa – Ethical Brunch</h2>
+        <p id="hero_text">Enjoy sustainable brunch with regional organic ingredients in a stylish atmosphere!</p>
       </div>
     </section>
     <section class="menu-section" id="menu">
       <div class="container">
-        <h2 id="menu_title">Unser Menü</h2>
+        <h2 id="menu_title">Our Menu</h2>
         <div class="menu-gallery">
           <div class="menu-card">
-            <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Avocado Toast">
+            <img src="images/dish1.jpg" alt="Avocado Toast">
             <h3 id="dish1_title">Avocado Toast</h3>
-            <p id="dish1_desc">Bio-Sauerteigbrot, Avocado, Radieschen, pochiertes Ei.</p>
+            <p id="dish1_desc">Organic sourdough bread, avocado, radish, poached egg.</p>
           </div>
           <div class="menu-card">
-            <img src="https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80" alt="Pancake Stack">
+            <img src="images/dish2.jpg" alt="Pancake Stack">
             <h3 id="dish2_title">Pancake Stack</h3>
-            <p id="dish2_desc">Dinkel-Pancakes, frische Beeren, Ahornsirup.</p>
+            <p id="dish2_desc">Spelt pancakes, fresh berries, maple syrup.</p>
           </div>
           <div class="menu-card">
-            <img src="https://images.unsplash.com/photo-1523987355523-c7b5b0723cdd?auto=format&fit=crop&w=400&q=80" alt="Veganes Frühstück">
-            <h3 id="dish3_title">Veganes Frühstück</h3>
-            <p id="dish3_desc">Hausgemachtes Granola, Kokosjoghurt, saisonale Früchte.</p>
+            <img src="images/dish3.jpg" alt="Vegan Breakfast">
+            <h3 id="dish3_title">Vegan Breakfast</h3>
+            <p id="dish3_desc">Homemade granola, coconut yogurt, seasonal fruits.</p>
           </div>
         </div>
       </div>
     </section>
     <section class="about-section" id="about">
       <div class="container">
-        <h2 id="about_title">Über uns</h2>
-        <p id="about_text">La Cupa steht für bewussten Genuss: Wir arbeiten mit regionalen Partnern, bevorzugen Bio-Produkte und setzen auf kurze Lieferwege.</p>
+        <h2 id="about_title">About us</h2>
+        <p id="about_text" style="font-size:1.25rem;">In una città profondamente legata alla tradizione culinaria come Lecce, proponiamo un brunch contemporaneo che unisce gusto, consapevolezza e atmosfera. Con la nostra filosofia green, diamo valore agli ingredienti biologici, locali e stagionali.</p>
       </div>
     </section>
     <section class="contact-section" id="contact">
       <div class="container">
-        <h2 id="contact_title">Kontakt</h2>
+        <h2 id="contact_title">Contact</h2>
         <ul class="contact-list">
-          <li><b id="address">Adresse:</b> Hermannstraße 1, 12345 Berlin</li>
-          <li><b id="phone">Telefon:</b> 030 12345678</li>
-          <li><b id="email">E-Mail:</b> info@lacupa.de</li>
+          <li><b id="address">Address:</b> Via Fiume 56, 73100 Lecce</li>
+          <li><b id="phone">Phone:</b> +39 0832 123456</li>
+          <li><b id="email">Email:</b> ciao@lacupaethicalbrunch.com</li>
         </ul>
       </div>
     </section>
   </main>
+
   <footer>
     <div class="container footer-flex">
-      <span id="footer_copyright">&copy; 2024 La Cupa</span>
+      <span id="footer_copyright">© 2024 La Cupa Ethical Brunch</span>
       <span class="socials">
-        <a href="#" title="Instagram">📸</a>
-        <a href="#" title="Facebook">📘</a>
+        <a href="https://www.instagram.com/lacupaethicalbrunch/" title="Instagram" target="_blank">📸</a>
+        <a href="https://www.facebook.com/lacupaethicalbrunch/" title="Facebook" target="_blank">📘</a>
       </span>
     </div>
   </footer>
@@ -131,10 +118,9 @@
       loadLocale(lang);
       localStorage.setItem('selectedLang', lang);
     });
-    // Default: Browser-Sprache oder gespeicherte Sprache
     (function initI18n(){
       let lang = localStorage.getItem('selectedLang') || navigator.language.slice(0,2);
-      if(!['de','en','it'].includes(lang)) lang = 'de';
+      if(!['de','en','it'].includes(lang)) lang = 'en';
       document.getElementById('langSelect').value = lang;
       loadLocale(lang);
     })();
