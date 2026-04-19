@@ -1,17 +1,143 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <title>La Cupa - Ethical Brunch</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Cupa – Ethical Brunch</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .lang-selector {
+      position: absolute;
+      right: 22px;
+      top: 18px;
+      z-index: 1100;
+    }
+    .lang-selector select {
+      padding: 3px 9px;
+      border-radius: 11px;
+      border: 1px solid #850101;
+      background: #fffbe7;
+      color: #850101;
+      font-weight: bold;
+      font-size: 1.02rem;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div class="container text-center mt-5">
+  <div class="lang-selector">
+    <select id="langSelect" aria-label="Sprache auswählen">
+      <option value="de">Deutsch</option>
+      <option value="en">English</option>
+      <option value="it">Italiano</option>
+    </select>
+  </div>
+  <header>
+    <div class="container header-flex">
+      <div class="logo-title">
+        <div class="logo-placeholder">🍳</div>
         <h1>La Cupa</h1>
-        <h2>Ethical Brunch</h2>
-        <p>Willkommen im La Cupa, dem Ort für nachhaltige und ethische Genüsse. Genießen Sie unsere Brunch-Spezialitäten in einem gemütlichen Ambiente.</p>
-        <button class="btn btn-primary mt-3">Jetzt reservieren</button>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#home" id="nav_home">Home</a></li>
+          <li><a href="#menu" id="nav_menu">Menü</a></li>
+          <li><a href="#about" id="nav_about">Über uns</a></li>
+          <li><a href="#contact" id="nav_contact">Kontakt</a></li>
+        </ul>
+      </nav>
     </div>
+  </header>
+  <main>
+    <section class="hero" id="home">
+      <div class="container">
+        <h2 id="hero_title">Willkommen bei La Cupa – Ethical Brunch</h2>
+        <p id="hero_text">Genießen Sie nachhaltigen Brunch mit regionalen Bio-Zutaten in stilvoller Atmosphäre!</p>
+      </div>
+    </section>
+    <section class="menu-section" id="menu">
+      <div class="container">
+        <h2 id="menu_title">Unser Menü</h2>
+        <div class="menu-gallery">
+          <div class="menu-card">
+            <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Avocado Toast">
+            <h3 id="dish1_title">Avocado Toast</h3>
+            <p id="dish1_desc">Bio-Sauerteigbrot, Avocado, Radieschen, pochiertes Ei.</p>
+          </div>
+          <div class="menu-card">
+            <img src="https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80" alt="Pancake Stack">
+            <h3 id="dish2_title">Pancake Stack</h3>
+            <p id="dish2_desc">Dinkel-Pancakes, frische Beeren, Ahornsirup.</p>
+          </div>
+          <div class="menu-card">
+            <img src="https://images.unsplash.com/photo-1523987355523-c7b5b0723cdd?auto=format&fit=crop&w=400&q=80" alt="Veganes Frühstück">
+            <h3 id="dish3_title">Veganes Frühstück</h3>
+            <p id="dish3_desc">Hausgemachtes Granola, Kokosjoghurt, saisonale Früchte.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="about-section" id="about">
+      <div class="container">
+        <h2 id="about_title">Über uns</h2>
+        <p id="about_text">La Cupa steht für bewussten Genuss: Wir arbeiten mit regionalen Partnern, bevorzugen Bio-Produkte und setzen auf kurze Lieferwege.</p>
+      </div>
+    </section>
+    <section class="contact-section" id="contact">
+      <div class="container">
+        <h2 id="contact_title">Kontakt</h2>
+        <ul class="contact-list">
+          <li><b id="address">Adresse:</b> Hermannstraße 1, 12345 Berlin</li>
+          <li><b id="phone">Telefon:</b> 030 12345678</li>
+          <li><b id="email">E-Mail:</b> info@lacupa.de</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="container footer-flex">
+      <span id="footer_copyright">&copy; 2024 La Cupa</span>
+      <span class="socials">
+        <a href="#" title="Instagram">📸</a>
+        <a href="#" title="Facebook">📘</a>
+      </span>
+    </div>
+  </footer>
+  <script>
+    const locales = {};
+    const languageFiles = {
+      de: 'locales/de.json',
+      en: 'locales/en.json',
+      it: 'locales/it.json'
+    };
+    function setLangById(data) {
+      for (const key in data) {
+        const elem = document.getElementById(key);
+        if(elem) {
+          elem.innerText = data[key];
+        }
+      }
+    }
+    async function loadLocale(lang) {
+      if (!locales[lang]) {
+        const response = await fetch(languageFiles[lang]);
+        locales[lang] = await response.json();
+      }
+      setLangById(locales[lang]);
+      document.documentElement.lang = lang;
+    }
+    document.getElementById('langSelect').addEventListener('change', (e) => {
+      const lang = e.target.value;
+      loadLocale(lang);
+      localStorage.setItem('selectedLang', lang);
+    });
+    // Default: Browser-Sprache oder gespeicherte Sprache
+    (function initI18n(){
+      let lang = localStorage.getItem('selectedLang') || navigator.language.slice(0,2);
+      if(!['de','en','it'].includes(lang)) lang = 'de';
+      document.getElementById('langSelect').value = lang;
+      loadLocale(lang);
+    })();
+  </script>
 </body>
 </html>

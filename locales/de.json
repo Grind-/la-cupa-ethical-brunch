@@ -1,0 +1,22 @@
+{
+  "nav_home": "Home",
+  "nav_menu": "Menü",
+  "nav_about": "Über uns",
+  "nav_contact": "Kontakt",
+  "hero_title": "Willkommen bei La Cupa – Ethical Brunch",
+  "hero_text": "Genießen Sie nachhaltigen Brunch mit regionalen Bio-Zutaten in stilvoller Atmosphäre!",
+  "menu_title": "Unser Menü",
+  "dish1_title": "Avocado Toast",
+  "dish1_desc": "Bio-Sauerteigbrot, Avocado, Radieschen, pochiertes Ei.",
+  "dish2_title": "Pancake Stack",
+  "dish2_desc": "Dinkel-Pancakes, frische Beeren, Ahornsirup.",
+  "dish3_title": "Veganes Frühstück",
+  "dish3_desc": "Hausgemachtes Granola, Kokosjoghurt, saisonale Früchte.",
+  "about_title": "Über uns",
+  "about_text": "La Cupa steht für bewussten Genuss: Wir arbeiten mit regionalen Partnern, bevorzugen Bio-Produkte und setzen auf kurze Lieferwege.",
+  "contact_title": "Kontakt",
+  "address": "Adresse:",
+  "phone": "Telefon:",
+  "email": "E-Mail:",
+  "footer_copyright": "© 2024 La Cupa"
+}
