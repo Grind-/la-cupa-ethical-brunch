@@ -1,7 +1,7 @@
 {
   "name": "hallo-josef-app",
   "version": "1.0.0",
-  "description": "Eine einfache App, die Hallo Josef anzeigt.",
+  "description": "A simple app to greet Josef.",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"

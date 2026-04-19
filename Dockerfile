@@ -1,18 +1,20 @@
-# Verwende das Node.js 14-Alpine-Image als Basis
-FROM node:14-alpine
+# Use official Node.js LTS image
+FROM node:16
 
-# Arbeitsverzeichnis erstellen
-WORKDIR /app
+# Set working directory
+WORKDIR /usr/src/app
 
-# Abhängigkeiten installieren
+# Copy package.json and package-lock.json
 COPY package*.json ./
+
+# Install app dependencies
 RUN npm install
 
-# App-Code kopieren
+# Bundle app source
 COPY . .
 
-# Port, auf dem die App läuft
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Startbefehl
+# Define the command to run the app
 CMD ["node", "app.js"]
