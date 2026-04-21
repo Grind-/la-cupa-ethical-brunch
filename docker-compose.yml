@@ -1,7 +1,7 @@
-version: '3'
 services:
-  hallo-josef-app:
+  hello3d:
     build: .
+    container_name: hello3d-app
     ports:
       - "3000:3000"
-    container_name: hallo-josef-app-container
+    restart: unless-stopped

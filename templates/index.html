@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hello World 3D</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    canvas { display: block; }
+    #hint {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.35);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+<div id="hint">drag to rotate &nbsp;·&nbsp; scroll to zoom</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// Scene setup
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 8;
+controls.maxDistance = 50;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 1.2;
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0x111133, 1.5);
+scene.add(ambientLight);
+
+const mainLight = new THREE.DirectionalLight(0xffffff, 3);
+mainLight.position.set(5, 10, 8);
+mainLight.castShadow = true;
+scene.add(mainLight);
+
+const blueLight = new THREE.PointLight(0x4488ff, 6, 40);
+blueLight.position.set(-10, 5, 5);
+scene.add(blueLight);
+
+const pinkLight = new THREE.PointLight(0xff44aa, 6, 40);
+pinkLight.position.set(10, -5, 5);
+scene.add(pinkLight);
+
+const rimLight = new THREE.DirectionalLight(0x88ffcc, 1.5);
+rimLight.position.set(-5, -5, -10);
+scene.add(rimLight);
+
+// Stars background
+const starGeo = new THREE.BufferGeometry();
+const starCount = 2000;
+const starPositions = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount * 3; i++) {
+  starPositions[i] = (Math.random() - 0.5) * 400;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, sizeAttenuation: true });
+scene.add(new THREE.Points(starGeo, starMat));
+
+// 3D Text
+const loader = new FontLoader();
+loader.load(
+  'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/fonts/helvetiker_bold.typeface.json',
+  (font) => {
+    const words = ['HELLO', 'WORLD'];
+    const colors = [0x4488ff, 0xff44aa];
+    const group = new THREE.Group();
+
+    words.forEach((word, wi) => {
+      const geo = new TextGeometry(word, {
+        font,
+        size: 2.4,
+        depth: 0.8,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.12,
+        bevelSize: 0.06,
+        bevelOffset: 0,
+        bevelSegments: 8,
+      });
+      geo.computeBoundingBox();
+      const w = geo.boundingBox.max.x - geo.boundingBox.min.x;
+
+      // Main colored material
+      const mat = new THREE.MeshStandardMaterial({
+        color: colors[wi],
+        metalness: 0.6,
+        roughness: 0.2,
+        envMapIntensity: 1.0,
+      });
+      // Bevel / side in white-ish
+      const matSide = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        metalness: 0.8,
+        roughness: 0.15,
+      });
+
+      const mesh = new THREE.Mesh(geo, [mat, matSide]);
+      mesh.position.set(-w / 2, wi === 0 ? 1.6 : -2.4, 0);
+      mesh.castShadow = true;
+      group.add(mesh);
+
+      // Glow plane behind each word
+      const glowGeo = new THREE.PlaneGeometry(w + 3, 4);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: colors[wi],
+        transparent: true,
+        opacity: 0.07,
+        depthWrite: false,
+      });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.position.set(0, wi === 0 ? 1.6 : -2.4, -0.5);
+      group.add(glow);
+    });
+
+    scene.add(group);
+
+    // Per-letter hover interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const originalScales = new Map();
+
+    group.children.forEach(c => originalScales.set(c.uuid, c.scale.clone()));
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(group.children, true);
+      group.children.forEach(c => {
+        if (c.isMesh) {
+          const hit = hits.find(h => h.object === c || h.object.parent === c);
+          const target = hit ? 1.12 : 1.0;
+          c.scale.lerp(new THREE.Vector3(target, target, target), 0.15);
+        }
+      });
+    });
+
+    // Animate lights
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.008;
+      blueLight.position.set(-10 * Math.cos(t), 5 * Math.sin(t * 0.7), 5);
+      pinkLight.position.set(10 * Math.cos(t + Math.PI), -5 * Math.sin(t * 0.7), 5);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+);
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
