@@ -962,25 +962,12 @@ var woocommerce_params = {"ajax_url":"/wp-admin/admin-ajax.php","wc_ajax_url":"/
 <link href="wp-content/plugins/ultimate-addons-for-gutenberg/spectra-v3/build/extensions/responsive-conditions/style-index__ver_1772395791.css" id="spectra-responsive-conditions-css" media="all" rel="stylesheet"/>
 </meta></meta></meta></link></link></link></link>
 <style>
-/* Disable Spectra sticky-container shaking */
+/* Only disable sticky positioning - keeps all other effects intact */
 .spectra-sticky-container {
   position: static !important;
   transform: none !important;
   top: auto !important;
-  transition: none !important;
 }
-/* Disable all Spectra/UAG entrance & scroll animations */
-[class*="spectra-"],
-[class*="uagb-"],
-[class*="wp-block-spectra-"] {
-  animation: none !important;
-  transition: none !important;
-  transform: none !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-/* Re-allow essential non-animation transitions (hover etc.) */
-a, button { transition: color 0.2s, background-color 0.2s !important; }
 </style>
 </head>
 <body class="home wp-singular page-template-default page page-id-366 wp-custom-logo wp-embed-responsive wp-theme-astra theme-astra surerank-1.6.5 woocommerce-no-js ast-desktop ast-plain-container ast-no-sidebar astra-4.12.3 ast-single-post ast-inherit-site-logo-transparent ast-theme-transparent-header ast-hfb-header" itemscope="itemscope" itemtype="https://schema.org/WebPage">
