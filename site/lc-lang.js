@@ -95,13 +95,13 @@
     dd.hidden = true;
 
     LANGS.forEach(function(l) {
-      var a = document.createElement('a');
-      a.href = '#';
+      var a = document.createElement('button');
+      a.type = 'button';
       a.className = 'lc-lang-option' + (l.code === currentLang ? ' lc-current' : '');
       a.dataset.code = l.code;
       a.innerHTML = '<span>' + l.flag + '</span><span>' + l.name + '</span>';
       a.addEventListener('click', function(e) {
-        e.preventDefault();
+        e.stopPropagation();
         dd.hidden = true;
         if (translations) {
           applyLang(l.code);
