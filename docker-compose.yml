@@ -1,7 +1,7 @@
 services:
-  hello3d:
+  lacupa-proxy:
     build: .
-    container_name: hello3d-app
+    container_name: lacupa-proxy
     ports:
-      - "3000:3000"
+      - "3000:80"
     restart: unless-stopped
