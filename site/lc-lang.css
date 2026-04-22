@@ -78,3 +78,23 @@
 }
 .lc-lang-option:hover { background: #f5f5f5; }
 .lc-lang-option.lc-current { background: #f0f0f0; font-weight: 700; }
+
+/* ── Mobile: info sections (Caffè, Pesce, Uova, …) ── */
+@media (max-width: 767.98px) {
+  /* Reduce over-generous side padding so text fills the dark box */
+  .wp-block-spectra-container[data-spectra-id='spectra-mmrhdact-8md1ur'],
+  .wp-block-spectra-container[data-spectra-id='spectra-266862d3-2b9c-4889-85d3-121e2d03a294'],
+  .wp-block-spectra-container[data-spectra-id='spectra-4223a7cc-fdab-4007-b11b-8480f2df20de'],
+  .wp-block-spectra-container[data-spectra-id='spectra-5db4ebbb-eaa8-4848-ab9f-169ca42cc13a'] {
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+  }
+  /* Remove the tiny side margins on the wrapper so box fills edge-to-edge */
+  .wp-block-spectra-container[data-spectra-id='spectra-mmqt442h-o5rwf8'],
+  .wp-block-spectra-container[data-spectra-id='spectra-d3cf4240-8564-4a0f-8ef6-a059cfb555be'],
+  .wp-block-spectra-container[data-spectra-id='spectra-3eeed976-b74e-41db-ae8b-b8081f57c55d'],
+  .wp-block-spectra-container[data-spectra-id='spectra-2de41ae5-b73e-44bb-bdef-23432e0981cc'] {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
