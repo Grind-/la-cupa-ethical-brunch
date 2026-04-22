@@ -1,13 +1,29 @@
-#lc-lang-switcher {
+/* ── shared wrapper ── */
+.lc-lang-switcher-wrap {
   display: none;
   position: relative;
   align-items: center;
   margin-right: 8px;
 }
+
+/* Mobile: show only on small screens */
+#lc-lang-switcher {
+  display: none;
+}
 @media (max-width: 920px) {
   #lc-lang-switcher { display: flex; }
 }
-#lc-lang-btn {
+
+/* Desktop: show only on large screens */
+#lc-lang-switcher-desktop {
+  display: none;
+}
+@media (min-width: 921px) {
+  #lc-lang-switcher-desktop { display: flex; }
+}
+
+/* ── button ── */
+.lc-lang-btn {
   background: transparent;
   border: 1.5px solid rgba(255,255,255,0.8);
   border-radius: 4px;
@@ -22,8 +38,10 @@
   align-items: center;
   gap: 4px;
 }
-#lc-lang-btn svg { width: 16px; height: 16px; fill: currentColor; }
-#lc-lang-dropdown {
+.lc-lang-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* ── dropdown ── */
+.lc-lang-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;

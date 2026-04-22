@@ -26,13 +26,12 @@
     currentLang = lang;
     localStorage.setItem('lc-lang', lang);
 
-    // Update button label
-    var btn = document.getElementById('lc-lang-btn');
-    if (btn) {
+    // Update all switcher buttons
+    document.querySelectorAll('.lc-lang-btn').forEach(function(btn) {
       var info = LANGS.find(function(l){ return l.code === lang; });
       btn.querySelector('.lc-lang-label').textContent = info ? info.label : lang.toUpperCase();
-    }
-    // Mark active in dropdown
+    });
+    // Mark active in all dropdowns
     document.querySelectorAll('.lc-lang-option').forEach(function(a) {
       a.classList.toggle('lc-current', a.dataset.code === lang);
     });
@@ -44,17 +43,14 @@
       if (!entry || !entry[lang]) return;
 
       // Skip container elements that have spectra-id children
-      // (their children will handle their own text)
       var spectraChildren = el.querySelectorAll('[data-spectra-id]');
       if (spectraChildren.length > 0) return;
 
       var newText = fixBrand(entry[lang]);
 
       // Preserve inner markup (<strong>, <em>, <a>) when possible
-      // by only replacing direct text nodes
       var hasMarkup = el.querySelector('strong, em, a, br');
       if (hasMarkup) {
-        // Replace only direct text nodes
         el.childNodes.forEach(function(node) {
           if (node.nodeType === 3 && node.textContent.trim()) {
             node.textContent = newText;
@@ -66,21 +62,18 @@
     });
   }
 
-  /* ── Build the UI button ── */
-  function buildUI() {
-    var mobileHeader = document.getElementById('ast-mobile-header');
-    if (!mobileHeader) return;
-    var right = mobileHeader.querySelector('.ast-grid-right-section');
-    if (!right) return;
+  /* ── Build a single switcher widget ── */
+  function buildSwitcher(wrapperId, btnId, dropdownId) {
+    var info = LANGS.find(function(l){ return l.code === currentLang; }) || LANGS[0];
 
     var wrap = document.createElement('div');
-    wrap.id = 'lc-lang-switcher';
+    wrap.id = wrapperId;
+    wrap.className = 'lc-lang-switcher-wrap';
 
     var btn = document.createElement('button');
-    btn.id = 'lc-lang-btn';
+    btn.id = btnId;
+    btn.className = 'lc-lang-btn';
     btn.setAttribute('aria-label', 'Select language');
-
-    var info = LANGS.find(function(l){ return l.code === currentLang; }) || LANGS[0];
     btn.innerHTML =
       '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
         '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' +
@@ -91,7 +84,8 @@
       '<span class="lc-lang-label">' + info.label + '</span>';
 
     var dd = document.createElement('div');
-    dd.id = 'lc-lang-dropdown';
+    dd.id = dropdownId;
+    dd.className = 'lc-lang-dropdown';
     dd.hidden = true;
 
     LANGS.forEach(function(l) {
@@ -102,7 +96,8 @@
       a.innerHTML = '<span>' + l.flag + '</span><span>' + l.name + '</span>';
       a.addEventListener('click', function(e) {
         e.stopPropagation();
-        dd.hidden = true;
+        // Close all dropdowns
+        document.querySelectorAll('.lc-lang-dropdown').forEach(function(d){ d.hidden = true; });
         if (translations) {
           applyLang(l.code);
         } else {
@@ -119,13 +114,45 @@
 
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
+      // Close other dropdowns first
+      document.querySelectorAll('.lc-lang-dropdown').forEach(function(d){
+        if (d !== dd) d.hidden = true;
+      });
       dd.hidden = !dd.hidden;
     });
-    document.addEventListener('click', function() { dd.hidden = true; });
 
     wrap.appendChild(btn);
     wrap.appendChild(dd);
-    right.insertBefore(wrap, right.firstChild);
+    return wrap;
+  }
+
+  /* ── Build the UI ── */
+  function buildUI() {
+    // Mobile switcher
+    var mobileHeader = document.getElementById('ast-mobile-header');
+    if (mobileHeader) {
+      var mobileRight = mobileHeader.querySelector('.ast-grid-right-section');
+      if (mobileRight) {
+        var mobileSwitcher = buildSwitcher('lc-lang-switcher', 'lc-lang-btn', 'lc-lang-dropdown');
+        mobileRight.insertBefore(mobileSwitcher, mobileRight.firstChild);
+      }
+    }
+
+    // Desktop switcher
+    var desktopHeader = document.getElementById('ast-desktop-header');
+    if (desktopHeader) {
+      var desktopRight = desktopHeader.querySelector('.ast-grid-right-section');
+      if (desktopRight) {
+        var desktopSwitcher = buildSwitcher('lc-lang-switcher-desktop', 'lc-lang-btn-desktop', 'lc-lang-dropdown-desktop');
+        // Insert before the first child (before the nav menu)
+        desktopRight.insertBefore(desktopSwitcher, desktopRight.firstChild);
+      }
+    }
+
+    // Close dropdowns when clicking elsewhere
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.lc-lang-dropdown').forEach(function(d){ d.hidden = true; });
+    });
 
     // Auto-apply saved language on load
     if (currentLang !== DEFAULT_LANG) {
