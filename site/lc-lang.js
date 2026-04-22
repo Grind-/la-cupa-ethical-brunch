@@ -138,14 +138,13 @@
       }
     }
 
-    // Desktop switcher
+    // Desktop switcher — appended after all existing children (far right)
     var desktopHeader = document.getElementById('ast-desktop-header');
     if (desktopHeader) {
       var desktopRight = desktopHeader.querySelector('.ast-grid-right-section');
       if (desktopRight) {
         var desktopSwitcher = buildSwitcher('lc-lang-switcher-desktop', 'lc-lang-btn-desktop', 'lc-lang-dropdown-desktop');
-        // Insert before the first child (before the nav menu)
-        desktopRight.insertBefore(desktopSwitcher, desktopRight.firstChild);
+        desktopRight.appendChild(desktopSwitcher);
       }
     }
 

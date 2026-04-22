@@ -38,6 +38,15 @@
   align-items: center;
   gap: 4px;
 }
+/* Desktop button: solid dark pill so it's visible on any header state */
+#lc-lang-switcher-desktop .lc-lang-btn {
+  background: rgba(40,40,40,0.85);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+#lc-lang-switcher-desktop .lc-lang-btn:hover {
+  background: rgba(40,40,40,1);
+}
 .lc-lang-btn svg { width: 16px; height: 16px; fill: currentColor; }
 
 /* ── dropdown ── */
