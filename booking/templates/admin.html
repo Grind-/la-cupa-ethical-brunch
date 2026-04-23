@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cupa – Admin</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f0ede8;min-height:100vh;color:#2c2c2c}
+  header{background:#2d4a1e;color:#fff;display:flex;align-items:center;justify-content:space-between;
+         padding:0.9rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+  header h1{font-size:1.15rem;font-style:italic;letter-spacing:0.04em}
+  .logout-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+              color:#fff;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;
+              transition:background .2s}
+  .logout-btn:hover{background:rgba(255,255,255,0.25)}
+  .tabs{display:flex;background:#fff;border-bottom:2px solid #e0dbd0;padding:0 1.5rem}
+  .tab{padding:0.85rem 1.5rem;border:none;background:none;cursor:pointer;font-size:0.92rem;
+       color:#777;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;font-family:inherit}
+  .tab.active{color:#2d4a1e;border-bottom-color:#2d4a1e;font-weight:600}
+  .tab-content{display:none;padding:1.5rem}
+  .tab-content.active{display:block}
+  .toolbar{display:flex;flex-wrap:wrap;gap:0.6rem;margin-bottom:1rem;align-items:center}
+  .btn{padding:0.5rem 1.1rem;border:none;border-radius:7px;cursor:pointer;font-size:0.88rem;
+       font-family:inherit;transition:all .2s;font-weight:500}
+  .btn-primary{background:#2d4a1e;color:#fff}
+  .btn-primary:hover{background:#3d6428}
+  .btn-secondary{background:#fff;color:#2d4a1e;border:1.5px solid #2d4a1e}
+  .btn-secondary:hover{background:#f0f5ee}
+  .btn-accent{background:#c8a96e;color:#fff}
+  .btn-accent:hover{background:#b8994e}
+  .btn-danger{background:#c0392b;color:#fff}
+  .btn-danger:hover{background:#a93226}
+  .btn-sm{padding:0.35rem 0.75rem;font-size:0.8rem}
+  .toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.5rem;border-radius:10px;
+         font-size:0.9rem;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:9999;
+         transform:translateY(100px);transition:transform .3s;pointer-events:none}
+  .toast.show{transform:translateY(0)}
+  .toast.success{background:#2d4a1e;color:#fff}
+  .toast.error{background:#c0392b;color:#fff}
+
+  /* Floor plan editor */
+  #editor-wrap{display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap}
+  #canvas-wrap{position:relative;flex:1 1 300px;min-width:280px;border-radius:10px;
+               overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#ddd;
+               cursor:default}
+  #canvas-wrap.adding{cursor:crosshair}
+  #plan-img{width:100%;height:auto;display:block;user-select:none;pointer-events:none}
+  #no-plan{display:flex;align-items:center;justify-content:center;height:200px;
+           color:#888;font-size:0.95rem;text-align:center;padding:1rem}
+  .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
+             transform:translate(-50%,-50%);cursor:grab;
+             display:flex;align-items:center;justify-content:center;
+             font-size:0.65rem;font-weight:700;color:#fff;text-align:center;line-height:1.2;
+             box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:box-shadow .2s;user-select:none;
+             border:2.5px solid rgba(255,255,255,0.5)}
+  .table-dot.rect{border-radius:8px}
+  .table-dot:hover{box-shadow:0 4px 16px rgba(0,0,0,0.35)}
+  .table-dot.selected{border:3px solid #fff;box-shadow:0 0 0 3px #c8a96e,0 4px 16px rgba(0,0,0,0.3)}
+  .table-dot:active{cursor:grabbing}
+  #props-panel{background:#fff;border-radius:10px;padding:1.2rem;min-width:220px;max-width:260px;
+               box-shadow:0 2px 12px rgba(0,0,0,0.1);flex-shrink:0}
+  #props-panel h3{font-size:0.95rem;color:#2d4a1e;margin-bottom:1rem;padding-bottom:0.5rem;
+                  border-bottom:2px solid #f0ede8}
+  .form-group{margin-bottom:0.9rem}
+  .form-group label{display:block;font-size:0.75rem;color:#777;margin-bottom:0.25rem;
+                    text-transform:uppercase;letter-spacing:0.05em}
+  .form-group input,.form-group select{width:100%;padding:0.5rem 0.7rem;border:1.5px solid #e0e0e0;
+              border-radius:6px;font-size:0.9rem;font-family:inherit;outline:none}
+  .form-group input:focus,.form-group select:focus{border-color:#2d4a1e}
+  .props-actions{display:flex;gap:0.5rem;margin-top:1rem}
+
+  /* Reservations */
+  .date-filter{display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap}
+  .res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.8rem;margin-top:1rem}
+  .res-card{background:#fff;border-radius:10px;padding:1.1rem;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
+  .res-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.6rem}
+  .res-table-name{font-weight:600;color:#2d4a1e;font-size:0.95rem}
+  .res-status{font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:20px;font-weight:600}
+  .status-confirmed{background:#e8f5e9;color:#2d6a2d}
+  .status-cancelled{background:#fdf2f2;color:#c0392b}
+  .res-info{font-size:0.85rem;color:#555;margin-bottom:0.15rem}
+  .res-info strong{color:#333}
+  .res-actions{display:flex;gap:0.4rem;margin-top:0.8rem;flex-wrap:wrap}
+  .no-res{text-align:center;color:#888;padding:2rem;font-size:0.9rem}
+
+  input[type=date],input[type=file]{font-family:inherit;padding:0.48rem 0.7rem;border:1.5px solid #e0e0e0;
+                                    border-radius:7px;font-size:0.88rem;outline:none}
+  input[type=date]:focus{border-color:#2d4a1e}
+  @media(max-width:600px){
+    .res-grid{grid-template-columns:1fr}
+    #props-panel{max-width:100%;width:100%}
+    #editor-wrap{flex-direction:column}
+    .tab{padding:0.7rem 1rem;font-size:0.85rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>La Cupa – Buchungsverwaltung</h1>
+  <form method="post" action="/admin/logout">
+    <button class="logout-btn" type="submit">Abmelden</button>
+  </form>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="floorplan">🗺 Raumplan</button>
+  <button class="tab" data-tab="reservations">📋 Reservierungen</button>
+</div>
+
+<!-- Floor Plan Tab -->
+<div class="tab-content active" id="floorplan-tab">
+  <div class="toolbar">
+    <label class="btn btn-secondary" style="cursor:pointer">
+      📁 Raumplan hochladen
+      <input type="file" id="file-input" accept="image/*" style="display:none">
+    </label>
+    <button class="btn btn-accent" id="add-table-btn">＋ Tisch hinzufügen</button>
+    <button class="btn btn-primary" id="save-btn">💾 Layout speichern</button>
+    <span id="add-hint" style="display:none;font-size:0.82rem;color:#c8a96e;font-style:italic">
+      Klicke auf den Plan um einen Tisch zu platzieren – oder Escape zum Abbrechen
+    </span>
+  </div>
+
+  <div id="editor-wrap">
+    <div id="canvas-wrap">
+      <div id="no-plan">Kein Raumplan vorhanden.<br>Bitte ein Bild hochladen.</div>
+      <img id="plan-img" style="display:none" alt="Raumplan">
+      <!-- table dots injected here -->
+    </div>
+
+    <div id="props-panel" style="display:none">
+      <h3>Tisch bearbeiten</h3>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="prop-name" placeholder="z.B. Tisch 1">
+      </div>
+      <div class="form-group">
+        <label>Plätze</label>
+        <input type="number" id="prop-capacity" min="1" max="30" value="4">
+      </div>
+      <div class="form-group">
+        <label>Max. Reservierungsdauer (Minuten)</label>
+        <input type="number" id="prop-duration" min="15" max="480" step="15" value="120">
+      </div>
+      <div class="form-group">
+        <label>Form</label>
+        <select id="prop-shape">
+          <option value="circle">Rund</option>
+          <option value="rect">Eckig</option>
+        </select>
+      </div>
+      <div class="props-actions">
+        <button class="btn btn-primary" style="flex:1" id="props-apply-btn">Übernehmen</button>
+        <button class="btn btn-danger btn-sm" id="props-delete-btn">Löschen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reservations Tab -->
+<div class="tab-content" id="reservations-tab">
+  <div class="toolbar date-filter">
+    <input type="date" id="date-filter" value="">
+    <button class="btn btn-primary" id="filter-btn">Filtern</button>
+    <button class="btn btn-secondary" id="all-btn">Alle anzeigen</button>
+  </div>
+  <div id="res-list" class="res-grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let tables = [];
+let selectedId = null;
+let addingMode = false;
+let dragging = null;
+let dragStart = null;
+const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
+
+function tableColor(idx) { return COLORS[idx % COLORS.length]; }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
+    if (btn.dataset.tab === 'reservations') loadReservations();
+  });
+});
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Floor plan image ──────────────────────────────────────────────────────────
+const fileInput = document.getElementById('file-input');
+const planImg = document.getElementById('plan-img');
+const noPlan = document.getElementById('no-plan');
+const canvasWrap = document.getElementById('canvas-wrap');
+
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/admin/api/floor-plan', { method: 'POST', body: fd });
+  if (r.ok) {
+    const d = await r.json();
+    showPlanImg(d.url + '?t=' + Date.now());
+    showToast('Raumplan hochgeladen!');
+  } else {
+    showToast('Fehler beim Hochladen', 'error');
+  }
+});
+
+function showPlanImg(url) {
+  planImg.src = url;
+  planImg.style.display = 'block';
+  noPlan.style.display = 'none';
+}
+
+// ── Load initial state ────────────────────────────────────────────────────────
+async function loadState() {
+  const r = await fetch('/admin/api/tables');
+  tables = await r.ok ? r.json() : [];
+
+  const fp = await fetch('/booking/api/floor-plan').then(r => r.json());
+  if (fp.floor_plan_url) showPlanImg(fp.floor_plan_url + '?t=' + Date.now());
+  renderTables();
+}
+
+loadState();
+
+// ── Render tables on canvas ───────────────────────────────────────────────────
+function renderTables() {
+  document.querySelectorAll('.table-dot').forEach(el => el.remove());
+  tables.forEach((t, idx) => {
+    const dot = document.createElement('div');
+    dot.className = 'table-dot' + (t.shape === 'rect' ? ' rect' : '') + (t.id === selectedId ? ' selected' : '');
+    dot.dataset.id = t.id;
+    dot.style.left = t.x + '%';
+    dot.style.top = t.y + '%';
+    dot.style.background = tableColor(idx);
+    dot.innerHTML = `<span style="padding:0 2px">${t.name}<br><small style="opacity:.75">${t.capacity}P</small></span>`;
+
+    dot.addEventListener('pointerdown', (e) => {
+      if (addingMode) return;
+      e.stopPropagation();
+      selectTable(t.id);
+      startDrag(e, t.id);
+    });
+
+    canvasWrap.appendChild(dot);
+  });
+}
+
+function selectTable(id) {
+  selectedId = id;
+  renderTables();
+  const t = tables.find(x => x.id === id);
+  if (!t) { document.getElementById('props-panel').style.display = 'none'; return; }
+  document.getElementById('props-panel').style.display = 'block';
+  document.getElementById('prop-name').value = t.name;
+  document.getElementById('prop-capacity').value = t.capacity;
+  document.getElementById('prop-duration').value = t.max_duration_minutes;
+  document.getElementById('prop-shape').value = t.shape;
+}
+
+// ── Add table mode ────────────────────────────────────────────────────────────
+document.getElementById('add-table-btn').addEventListener('click', () => {
+  if (planImg.style.display === 'none') {
+    showToast('Bitte zuerst einen Raumplan hochladen', 'error');
+    return;
+  }
+  addingMode = true;
+  canvasWrap.classList.add('adding');
+  document.getElementById('add-hint').style.display = 'inline';
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && addingMode) {
+    addingMode = false;
+    canvasWrap.classList.remove('adding');
+    document.getElementById('add-hint').style.display = 'none';
+  }
+});
+
+canvasWrap.addEventListener('click', (e) => {
+  if (!addingMode) return;
+  const rect = canvasWrap.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
+  const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
+  const newT = {
+    id: crypto.randomUUID(),
+    name: `Tisch ${tables.length + 1}`,
+    x: parseFloat(x), y: parseFloat(y),
+    capacity: 4, max_duration_minutes: 120, shape: 'circle'
+  };
+  tables.push(newT);
+  addingMode = false;
+  canvasWrap.classList.remove('adding');
+  document.getElementById('add-hint').style.display = 'none';
+  renderTables();
+  selectTable(newT.id);
+});
+
+// ── Drag & drop tables ────────────────────────────────────────────────────────
+let dragId = null;
+let dragOffX = 0, dragOffY = 0;
+
+function startDrag(e, id) {
+  dragId = id;
+  const dot = document.querySelector(`.table-dot[data-id="${id}"]`);
+  const dotRect = dot.getBoundingClientRect();
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  dragOffX = e.clientX - dotRect.left - dotRect.width / 2;
+  dragOffY = e.clientY - dotRect.top - dotRect.height / 2;
+  dot.setPointerCapture(e.pointerId);
+}
+
+document.addEventListener('pointermove', (e) => {
+  if (!dragId) return;
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  let x = ((e.clientX - dragOffX - wrapRect.left) / wrapRect.width * 100);
+  let y = ((e.clientY - dragOffY - wrapRect.top) / wrapRect.height * 100);
+  x = Math.max(2, Math.min(98, x));
+  y = Math.max(2, Math.min(98, y));
+  const dot = document.querySelector(`.table-dot[data-id="${dragId}"]`);
+  if (dot) { dot.style.left = x + '%'; dot.style.top = y + '%'; }
+  const t = tables.find(t => t.id === dragId);
+  if (t) { t.x = parseFloat(x.toFixed(2)); t.y = parseFloat(y.toFixed(2)); }
+});
+
+document.addEventListener('pointerup', () => { dragId = null; });
+
+// ── Props panel ───────────────────────────────────────────────────────────────
+document.getElementById('props-apply-btn').addEventListener('click', () => {
+  const t = tables.find(x => x.id === selectedId);
+  if (!t) return;
+  t.name = document.getElementById('prop-name').value.trim() || t.name;
+  t.capacity = parseInt(document.getElementById('prop-capacity').value) || 4;
+  t.max_duration_minutes = parseInt(document.getElementById('prop-duration').value) || 120;
+  t.shape = document.getElementById('prop-shape').value;
+  renderTables();
+  selectTable(t.id);
+  showToast('Tisch aktualisiert');
+});
+
+document.getElementById('props-delete-btn').addEventListener('click', () => {
+  tables = tables.filter(t => t.id !== selectedId);
+  selectedId = null;
+  document.getElementById('props-panel').style.display = 'none';
+  renderTables();
+  showToast('Tisch gelöscht');
+});
+
+// ── Save layout ───────────────────────────────────────────────────────────────
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const r = await fetch('/admin/api/tables', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(tables)
+  });
+  if (r.ok) showToast(`Layout gespeichert (${tables.length} Tische)`);
+  else showToast('Fehler beim Speichern', 'error');
+});
+
+// ── Reservations ──────────────────────────────────────────────────────────────
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date-filter').value = today;
+
+async function loadReservations(date) {
+  const url = date ? `/admin/api/reservations?date=${date}` : '/admin/api/reservations';
+  const r = await fetch(url);
+  const data = await r.json();
+  renderReservations(data);
+}
+
+function renderReservations(data) {
+  const el = document.getElementById('res-list');
+  if (!data.length) {
+    el.innerHTML = '<div class="no-res">Keine Reservierungen für diesen Zeitraum.</div>';
+    return;
+  }
+  el.innerHTML = data.map(res => {
+    const start = new Date(res.start_datetime);
+    const end = new Date(res.end_datetime);
+    const fmt = d => d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
+    const fmtDate = d => d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
+    const statusClass = res.status === 'confirmed' ? 'status-confirmed' : 'status-cancelled';
+    const statusLabel = res.status === 'confirmed' ? 'Bestätigt' : 'Storniert';
+    return `
+    <div class="res-card" id="res-${res.id}">
+      <div class="res-card-header">
+        <div class="res-table-name">🪑 ${res.table_name}</div>
+        <span class="res-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="res-info"><strong>${fmtDate(start)}</strong> · ${fmt(start)} – ${fmt(end)}</div>
+      <div class="res-info"><strong>${res.customer_name}</strong></div>
+      <div class="res-info">📧 ${res.customer_email}</div>
+      ${res.customer_phone ? `<div class="res-info">📞 ${res.customer_phone}</div>` : ''}
+      <div class="res-info">👥 ${res.guest_count} Gäste</div>
+      ${res.notes ? `<div class="res-info" style="font-style:italic;color:#888">„${res.notes}"</div>` : ''}
+      <div class="res-actions">
+        ${res.status === 'confirmed' ?
+          `<button class="btn btn-secondary btn-sm" onclick="updateRes('${res.id}','cancelled')">Stornieren</button>` :
+          `<button class="btn btn-primary btn-sm" onclick="updateRes('${res.id}','confirmed')">Wiederherstellen</button>`}
+        <button class="btn btn-danger btn-sm" onclick="deleteRes('${res.id}')">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateRes(id, status) {
+  await fetch(`/admin/api/reservations/${id}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  });
+  const date = document.getElementById('date-filter').value || null;
+  loadReservations(date);
+}
+
+async function deleteRes(id) {
+  if (!confirm('Reservierung unwiderruflich löschen?')) return;
+  await fetch(`/admin/api/reservations/${id}`, {method:'DELETE'});
+  const date = document.getElementById('date-filter').value || null;
+  loadReservations(date);
+}
+
+document.getElementById('filter-btn').addEventListener('click', () => {
+  loadReservations(document.getElementById('date-filter').value || null);
+});
+document.getElementById('all-btn').addEventListener('click', () => {
+  document.getElementById('date-filter').value = '';
+  loadReservations(null);
+});
+</script>
+</body>
+</html>

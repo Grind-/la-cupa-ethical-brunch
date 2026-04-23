@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cupa – Admin Login</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:linear-gradient(135deg,#1a2e0a 0%,#2d4a1e 100%);font-family:'Georgia',serif}
+  .card{background:#fff;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;
+        box-shadow:0 24px 64px rgba(0,0,0,0.35)}
+  .logo{text-align:center;margin-bottom:2rem}
+  .logo h1{font-size:2rem;color:#2d4a1e;font-style:italic;letter-spacing:0.02em}
+  .logo p{color:#888;font-size:0.82rem;margin-top:0.4rem;letter-spacing:0.1em;text-transform:uppercase}
+  .divider{width:40px;height:2px;background:#c8a96e;margin:0.8rem auto}
+  label{display:block;font-size:0.8rem;color:#555;margin-bottom:0.3rem;letter-spacing:0.05em;text-transform:uppercase}
+  input{width:100%;padding:0.75rem 1rem;border:1.5px solid #e0e0e0;border-radius:8px;
+        font-size:1rem;margin-bottom:1.2rem;outline:none;transition:border-color .2s;font-family:inherit}
+  input:focus{border-color:#2d4a1e}
+  button{width:100%;padding:0.9rem;background:#2d4a1e;color:#fff;border:none;border-radius:8px;
+         font-size:1rem;cursor:pointer;transition:background .2s;letter-spacing:0.05em;font-family:inherit}
+  button:hover{background:#3d6428}
+  .error{background:#fdf2f2;color:#c0392b;padding:0.75rem 1rem;border-radius:8px;
+         margin-bottom:1.2rem;font-size:0.88rem;border:1px solid #f5c6cb}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>La Cupa</h1>
+    <div class="divider"></div>
+    <p>Buchungsverwaltung</p>
+  </div>
+  {% if error %}
+  <div class="error">{{ error }}</div>
+  {% endif %}
+  <form method="post" action="/login">
+    <label>Benutzername</label>
+    <input type="text" name="username" required autofocus autocomplete="username">
+    <label>Passwort</label>
+    <input type="password" name="password" required autocomplete="current-password">
+    <button type="submit">Anmelden</button>
+  </form>
+</div>
+</body>
+</html>

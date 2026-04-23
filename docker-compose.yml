@@ -5,3 +5,16 @@ services:
     ports:
       - "3000:80"
     restart: unless-stopped
+    depends_on:
+      - booking
+
+  booking:
+    build: ./booking
+    container_name: lacupa-booking
+    restart: unless-stopped
+    volumes:
+      - ./booking-data:/data
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-lacupa2024}
+      - SECRET_KEY=${SECRET_KEY:-lacupa-secret-key-change-in-prod}

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cupa – Tisch reservieren</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Georgia',serif;background:#f5f0e8;color:#2c2c2c;min-height:100vh}
+
+  /* Header */
+  .site-header{background:#2d4a1e;color:#fff;text-align:center;padding:1.5rem 1rem}
+  .site-header h1{font-size:1.8rem;font-style:italic;letter-spacing:0.04em}
+  .site-header p{font-size:0.85rem;opacity:0.75;margin-top:0.3rem;letter-spacing:0.1em;text-transform:uppercase}
+  .back-link{position:absolute;top:1.2rem;left:1.2rem;color:rgba(255,255,255,0.7);
+             text-decoration:none;font-size:0.85rem;font-family:'Segoe UI',sans-serif}
+  .back-link:hover{color:#fff}
+
+  /* Picker bar */
+  .picker-bar{background:#fff;padding:1rem 1.5rem;display:flex;flex-wrap:wrap;gap:0.8rem;
+              align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);position:sticky;top:0;z-index:100}
+  .picker-bar label{font-size:0.78rem;color:#777;text-transform:uppercase;letter-spacing:0.05em;
+                    font-family:'Segoe UI',sans-serif}
+  .picker-bar input{padding:0.5rem 0.8rem;border:1.5px solid #e0e0e0;border-radius:7px;
+                    font-size:0.95rem;font-family:inherit;outline:none;transition:border-color .2s}
+  .picker-bar input:focus{border-color:#2d4a1e}
+  .picker-bar .check-btn{padding:0.5rem 1.2rem;background:#2d4a1e;color:#fff;border:none;
+                         border-radius:7px;cursor:pointer;font-size:0.9rem;font-family:inherit;
+                         transition:background .2s}
+  .picker-bar .check-btn:hover{background:#3d6428}
+  .legend{display:flex;gap:1rem;align-items:center;margin-left:auto;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;
+               font-family:'Segoe UI',sans-serif;color:#666}
+  .legend-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+
+  /* Floor plan */
+  .plan-section{padding:1.5rem;max-width:960px;margin:0 auto}
+  #no-plan{text-align:center;padding:3rem 1rem;color:#888;font-size:0.95rem}
+  #canvas-wrap{position:relative;border-radius:12px;overflow:hidden;
+               box-shadow:0 4px 20px rgba(0,0,0,0.12);background:#e8e4de}
+  #plan-img{width:100%;height:auto;display:block}
+  .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
+             transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
+             font-size:0.62rem;font-weight:700;color:#fff;text-align:center;line-height:1.2;
+             box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:transform .2s,box-shadow .2s;
+             border:2.5px solid rgba(255,255,255,0.4);cursor:default}
+  .table-dot.rect{border-radius:8px}
+  .table-dot.available{background:#2d7d4a;cursor:pointer}
+  .table-dot.available:hover{transform:translate(-50%,-50%) scale(1.15);
+                              box-shadow:0 4px 18px rgba(45,125,74,0.4)}
+  .table-dot.reserved{background:#b0392b;cursor:not-allowed;opacity:0.8}
+  .table-dot.neutral{background:#7a7a6a}
+  .hint-text{text-align:center;margin-top:1rem;font-size:0.85rem;color:#888;font-family:'Segoe UI',sans-serif}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;
+                 align-items:center;justify-content:center;padding:1rem}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:2rem;max-width:440px;width:100%;
+         box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;max-height:90vh;overflow-y:auto}
+  .modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;
+               font-size:1.4rem;cursor:pointer;color:#999;line-height:1}
+  .modal-close:hover{color:#333}
+  .modal h2{font-size:1.3rem;color:#2d4a1e;margin-bottom:0.2rem;font-style:italic}
+  .modal-meta{font-size:0.82rem;color:#888;margin-bottom:1.4rem;font-family:'Segoe UI',sans-serif}
+  .form-group{margin-bottom:1rem}
+  .form-group label{display:block;font-size:0.78rem;color:#666;margin-bottom:0.3rem;
+                    text-transform:uppercase;letter-spacing:0.05em;font-family:'Segoe UI',sans-serif}
+  .form-group input,.form-group textarea{width:100%;padding:0.6rem 0.8rem;border:1.5px solid #e0e0e0;
+              border-radius:7px;font-size:0.95rem;font-family:inherit;outline:none;transition:border-color .2s}
+  .form-group input:focus,.form-group textarea:focus{border-color:#2d4a1e}
+  .form-group textarea{resize:vertical;min-height:70px}
+  .submit-btn{width:100%;padding:0.85rem;background:#2d4a1e;color:#fff;border:none;border-radius:8px;
+              font-size:1rem;cursor:pointer;transition:background .2s;font-family:inherit;margin-top:0.5rem}
+  .submit-btn:hover{background:#3d6428}
+  .submit-btn:disabled{background:#aaa;cursor:not-allowed}
+
+  /* Success */
+  .success-box{text-align:center;padding:1rem 0}
+  .success-icon{font-size:3rem;margin-bottom:0.8rem}
+  .success-box h2{color:#2d4a1e;font-size:1.2rem;margin-bottom:0.5rem}
+  .success-box p{color:#555;font-size:0.9rem;font-family:'Segoe UI',sans-serif;line-height:1.5}
+
+  .error-msg{background:#fdf2f2;color:#c0392b;padding:0.6rem 0.8rem;border-radius:6px;
+             font-size:0.85rem;margin-bottom:0.8rem;font-family:'Segoe UI',sans-serif;display:none}
+
+  @media(max-width:480px){
+    .picker-bar{padding:0.8rem 1rem}
+    .legend{margin-left:0;width:100%}
+    .site-header h1{font-size:1.4rem}
+    .modal{padding:1.5rem}
+  }
+</style>
+</head>
+<body>
+
+<div style="position:relative">
+  <a class="back-link" href="/">← Zurück zur Website</a>
+  <div class="site-header">
+    <h1>La Cupa Ethical Brunch</h1>
+    <p>Tischreservierung</p>
+  </div>
+</div>
+
+<div class="picker-bar">
+  <div>
+    <label>Datum</label><br>
+    <input type="date" id="pick-date" min="">
+  </div>
+  <div>
+    <label>Uhrzeit (von)</label><br>
+    <input type="time" id="pick-time" step="900">
+  </div>
+  <button class="check-btn" id="check-btn">Verfügbarkeit prüfen</button>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#2d7d4a"></div> Frei</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b0392b"></div> Belegt</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7a7a6a"></div> Kein Datum gewählt</div>
+  </div>
+</div>
+
+<div class="plan-section">
+  {% if not floor_plan_url %}
+  <div id="no-plan">
+    <p style="font-size:2rem">🍽️</p>
+    <p style="margin-top:0.5rem">Raumplan wird gerade eingerichtet.<br>Für Reservierungen rufen Sie uns bitte an.</p>
+  </div>
+  {% else %}
+  <div id="canvas-wrap">
+    <img id="plan-img" src="{{ floor_plan_url }}" alt="Raumplan">
+    <!-- Tables injected by JS -->
+  </div>
+  <p class="hint-text" id="hint">Wählen Sie Datum und Uhrzeit, um die Verfügbarkeit zu sehen.</p>
+  {% endif %}
+</div>
+
+<!-- Booking Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div id="modal-book">
+      <h2 id="modal-table-name">Tisch 1</h2>
+      <p class="modal-meta" id="modal-meta"></p>
+      <div class="error-msg" id="book-error"></div>
+      <div class="form-group">
+        <label>Ihr Name *</label>
+        <input type="text" id="f-name" required placeholder="Vollständiger Name">
+      </div>
+      <div class="form-group">
+        <label>E-Mail *</label>
+        <input type="email" id="f-email" required placeholder="ihre@email.de">
+      </div>
+      <div class="form-group">
+        <label>Telefon</label>
+        <input type="tel" id="f-phone" placeholder="+39 ...">
+      </div>
+      <div class="form-group">
+        <label>Anzahl Gäste *</label>
+        <input type="number" id="f-guests" min="1" max="20" value="2">
+      </div>
+      <div class="form-group">
+        <label>Anmerkungen</label>
+        <textarea id="f-notes" placeholder="Besondere Wünsche, Allergien, ..."></textarea>
+      </div>
+      <button class="submit-btn" id="submit-btn">Jetzt reservieren</button>
+    </div>
+    <div id="modal-success" class="success-box" style="display:none">
+      <div class="success-icon">✅</div>
+      <h2>Reservierung bestätigt!</h2>
+      <p id="success-text"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Init ──────────────────────────────────────────────────────────────────────
+const hasPlan = {{ 'true' if floor_plan_url else 'false' }};
+let tables = [];
+let checkedAvailability = false;
+let currentTable = null;
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('pick-date').min = today;
+document.getElementById('pick-date').value = today;
+const nextHour = new Date();
+nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+document.getElementById('pick-time').value = nextHour.toTimeString().slice(0,5);
+
+if (hasPlan) loadTables();
+
+async function loadTables() {
+  const r = await fetch('/booking/api/floor-plan');
+  const d = await r.json();
+  tables = d.tables || [];
+  renderTables('neutral');
+}
+
+// ── Render tables ─────────────────────────────────────────────────────────────
+const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
+function tableColor(idx) { return COLORS[idx % COLORS.length]; }
+
+function renderTables(mode, availData) {
+  const wrap = document.getElementById('canvas-wrap');
+  if (!wrap) return;
+  document.querySelectorAll('.table-dot').forEach(el => el.remove());
+
+  tables.forEach((t, idx) => {
+    const dot = document.createElement('div');
+    let cls = 'table-dot' + (t.shape === 'rect' ? ' rect' : '');
+    let color = '';
+    let available = false;
+
+    if (mode === 'neutral') {
+      cls += ' neutral';
+      color = '#7a7a6a';
+    } else if (availData) {
+      const ad = availData.find(a => a.id === t.id);
+      if (ad && ad.available) { cls += ' available'; color = '#2d7d4a'; available = true; }
+      else { cls += ' reserved'; color = '#b0392b'; }
+    }
+
+    dot.className = cls;
+    dot.dataset.id = t.id;
+    dot.style.left = t.x + '%';
+    dot.style.top = t.y + '%';
+    dot.style.background = color;
+    dot.innerHTML = `<span style="padding:0 2px">${t.name}<br><small style="opacity:.8">${t.capacity}P</small></span>`;
+
+    if (available) {
+      dot.addEventListener('click', () => openModal(t));
+    }
+    wrap.appendChild(dot);
+  });
+}
+
+// ── Availability check ────────────────────────────────────────────────────────
+document.getElementById('check-btn').addEventListener('click', checkAvailability);
+
+async function checkAvailability() {
+  const date = document.getElementById('pick-date').value;
+  const time = document.getElementById('pick-time').value;
+  if (!date || !time) { alert('Bitte Datum und Uhrzeit wählen.'); return; }
+
+  const r = await fetch(`/booking/api/availability?date=${date}&start_time=${time}`);
+  if (!r.ok) return;
+  const data = await r.json();
+  renderTables('avail', data);
+  checkedAvailability = true;
+
+  const free = data.filter(t => t.available).length;
+  const hint = document.getElementById('hint');
+  if (hint) hint.textContent = free > 0 ? `${free} Tisch/Tische verfügbar – wählen Sie einen grünen Tisch.` : 'Leider sind alle Tische zu dieser Zeit belegt.';
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(table) {
+  currentTable = table;
+  document.getElementById('modal-table-name').textContent = table.name;
+  const date = document.getElementById('pick-date').value;
+  const time = document.getElementById('pick-time').value;
+  const start = new Date(`${date}T${time}:00`);
+  const end = new Date(start.getTime() + table.max_duration_minutes * 60000);
+  const fmt = d => d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
+  const fmtDate = d => d.toLocaleDateString('de-DE', {day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('modal-meta').textContent =
+    `${fmtDate(start)} · ${fmt(start)} – ${fmt(end)} · Plätze: ${table.capacity}`;
+  document.getElementById('f-guests').max = table.capacity;
+  document.getElementById('modal-book').style.display = 'block';
+  document.getElementById('modal-success').style.display = 'none';
+  document.getElementById('book-error').style.display = 'none';
+  document.getElementById('modal').classList.add('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+// ── Submit booking ────────────────────────────────────────────────────────────
+document.getElementById('submit-btn').addEventListener('click', async () => {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const guests = parseInt(document.getElementById('f-guests').value);
+  const errEl = document.getElementById('book-error');
+
+  if (!name || !email || !guests) {
+    errEl.textContent = 'Bitte alle Pflichtfelder ausfüllen.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Bitte eine gültige E-Mail-Adresse eingeben.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Wird reserviert …';
+
+  const date = document.getElementById('pick-date').value;
+  const time = document.getElementById('pick-time').value;
+
+  const r = await fetch('/booking/api/reservations', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      table_id: currentTable.id,
+      customer_name: name,
+      customer_email: email,
+      customer_phone: document.getElementById('f-phone').value.trim(),
+      guest_count: guests,
+      date, start_time: time,
+      notes: document.getElementById('f-notes').value.trim()
+    })
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Jetzt reservieren';
+
+  if (r.ok) {
+    const d = await r.json();
+    const start = new Date(`${date}T${time}:00`);
+    const end = new Date(`${date}T${d.end_time}:00`);
+    const fmt = t => t.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
+    const fmtDate = t => t.toLocaleDateString('de-DE', {day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('success-text').innerHTML =
+      `<strong>${currentTable.name}</strong> am <strong>${fmtDate(start)}</strong><br>
+       ${fmt(start)} – ${fmt(end)} · ${guests} Gäste<br><br>
+       Eine Bestätigung wurde an <strong>${email}</strong> gesendet.`;
+    document.getElementById('modal-book').style.display = 'none';
+    document.getElementById('modal-success').style.display = 'block';
+    // Refresh availability
+    checkAvailability();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    errEl.textContent = d.detail === 'Table not available'
+      ? 'Dieser Tisch ist leider nicht mehr verfügbar. Bitte wählen Sie einen anderen.'
+      : 'Fehler bei der Reservierung. Bitte versuchen Sie es erneut.';
+    errEl.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
