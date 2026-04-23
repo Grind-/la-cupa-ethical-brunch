@@ -36,8 +36,8 @@
   /* Floor plan */
   .plan-section{padding:1.5rem;max-width:960px;margin:0 auto}
   #no-plan{text-align:center;padding:3rem 1rem;color:#888;font-size:0.95rem}
-  #canvas-wrap{position:relative;border-radius:12px;overflow:hidden;
-               box-shadow:0 4px 20px rgba(0,0,0,0.12);background:#e8e4de}
+  #fp-scroller{overflow:auto;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)}
+  #canvas-wrap{position:relative;width:100%;background:#e8e4de}
   #plan-img{width:100%;height:auto;display:block}
   .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
              transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
@@ -126,9 +126,18 @@
     <p style="margin-top:0.5rem">Raumplan wird gerade eingerichtet.<br>Für Reservierungen rufen Sie uns bitte an.</p>
   </div>
   {% else %}
+  <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;flex-wrap:wrap">
+    <label style="font-size:0.8rem;color:#888">Zoom:</label>
+    <input type="range" id="fp-zoom" min="30" max="300" value="100" step="5" style="width:120px;accent-color:#2d4a1e">
+    <span id="fp-zoom-label" style="font-size:0.8rem;color:#888;min-width:3rem">100%</span>
+    <button onclick="document.getElementById('fp-zoom').value=100;applyZoom()"
+      style="background:none;border:1px solid #ccc;border-radius:5px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.8rem;color:#888">↺</button>
+  </div>
+  <div id="fp-scroller">
   <div id="canvas-wrap">
     <img id="plan-img" src="{{ floor_plan_url }}" alt="Raumplan">
     <!-- Tables injected by JS -->
+  </div>
   </div>
   <p class="hint-text" id="hint">Wählen Sie Datum und Uhrzeit, um die Verfügbarkeit zu sehen.</p>
   {% endif %}
@@ -186,7 +195,17 @@ const nextHour = new Date();
 nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
 document.getElementById('pick-time').value = nextHour.toTimeString().slice(0,5);
 
-if (hasPlan) loadTables();
+if (hasPlan) {
+  loadTables();
+  const fpZoom = document.getElementById('fp-zoom');
+  if (fpZoom) fpZoom.addEventListener('input', applyZoom);
+}
+
+function applyZoom() {
+  const z = parseInt(document.getElementById('fp-zoom').value);
+  document.getElementById('fp-zoom-label').textContent = z + '%';
+  document.getElementById('canvas-wrap').style.width = z + '%';
+}
 
 async function loadTables() {
   const r = await fetch('/booking/api/floor-plan');
@@ -262,9 +281,13 @@ function openModal(table) {
   const end = new Date(start.getTime() + table.max_duration_minutes * 60000);
   const fmt = d => d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
   const fmtDate = d => d.toLocaleDateString('de-DE', {day:'2-digit',month:'long',year:'numeric'});
+  const minP = table.min_capacity ?? 1;
   document.getElementById('modal-meta').textContent =
-    `${fmtDate(start)} · ${fmt(start)} – ${fmt(end)} · Plätze: ${table.capacity}`;
-  document.getElementById('f-guests').max = table.capacity;
+    `${fmtDate(start)} · ${fmt(start)} – ${fmt(end)} · ${minP}–${table.capacity} Personen`;
+  const guestsInput = document.getElementById('f-guests');
+  guestsInput.min = minP;
+  guestsInput.max = table.capacity;
+  if (parseInt(guestsInput.value) < minP) guestsInput.value = minP;
   document.getElementById('modal-book').style.display = 'block';
   document.getElementById('modal-success').style.display = 'none';
   document.getElementById('book-error').style.display = 'none';
@@ -282,8 +305,14 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   const guests = parseInt(document.getElementById('f-guests').value);
   const errEl = document.getElementById('book-error');
 
+  const minP = currentTable.min_capacity ?? 1;
   if (!name || !email || !guests) {
     errEl.textContent = 'Bitte alle Pflichtfelder ausfüllen.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (guests < minP) {
+    errEl.textContent = `Mindestens ${minP} Person(en) erforderlich für diesen Tisch.`;
     errEl.style.display = 'block';
     return;
   }

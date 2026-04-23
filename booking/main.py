@@ -62,6 +62,7 @@ def init_db():
             x REAL NOT NULL DEFAULT 50,
             y REAL NOT NULL DEFAULT 50,
             capacity INTEGER NOT NULL DEFAULT 4,
+            min_capacity INTEGER NOT NULL DEFAULT 1,
             max_duration_minutes INTEGER NOT NULL DEFAULT 120,
             shape TEXT NOT NULL DEFAULT 'circle'
         );
@@ -92,6 +93,12 @@ def init_db():
         );
     """)
     conn.commit()
+    # Migrate: add min_capacity column if missing (existing DBs)
+    try:
+        conn.execute("ALTER TABLE tables ADD COLUMN min_capacity INTEGER NOT NULL DEFAULT 1")
+        conn.commit()
+    except Exception:
+        pass
     # Seed initial superadmin from env vars only when no users exist
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
@@ -313,9 +320,10 @@ async def save_tables(request: Request):
     db.execute("DELETE FROM tables")
     for t in tables:
         t.setdefault("id", str(uuid.uuid4()))
+        t.setdefault("min_capacity", 1)
         db.execute(
-            "INSERT OR REPLACE INTO tables(id,name,x,y,capacity,max_duration_minutes,shape)"
-            " VALUES(:id,:name,:x,:y,:capacity,:max_duration_minutes,:shape)",
+            "INSERT OR REPLACE INTO tables(id,name,x,y,capacity,min_capacity,max_duration_minutes,shape)"
+            " VALUES(:id,:name,:x,:y,:capacity,:min_capacity,:max_duration_minutes,:shape)",
             t,
         )
     db.commit()

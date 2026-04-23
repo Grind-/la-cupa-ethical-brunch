@@ -44,8 +44,9 @@
 
   /* Floor plan editor */
   #editor-wrap{display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap}
-  #canvas-wrap{position:relative;flex:1 1 300px;min-width:280px;border-radius:10px;
-               overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#ddd;cursor:default}
+  #fp-scroller{flex:1 1 300px;overflow:auto;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.12)}
+  #canvas-wrap{position:relative;width:100%;border-radius:10px;
+               overflow:hidden;background:#ddd;cursor:default}
   #canvas-wrap.adding{cursor:crosshair}
   #plan-img{width:100%;height:auto;display:block;user-select:none;pointer-events:none}
   #no-plan{display:flex;align-items:center;justify-content:center;height:200px;
@@ -165,11 +166,19 @@
     <span id="add-hint" style="display:none;font-size:0.82rem;color:#c8a96e;font-style:italic">
       Klicke auf den Plan um einen Tisch zu platzieren – Escape zum Abbrechen
     </span>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto">
+      <label style="font-size:0.8rem;color:#777;white-space:nowrap">Zoom:</label>
+      <input type="range" id="fp-zoom" min="30" max="300" value="100" step="5" style="width:110px">
+      <span id="fp-zoom-label" style="font-size:0.8rem;min-width:3rem;color:#555">100%</span>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fp-zoom').value=100;applyZoom()">↺</button>
+    </div>
   </div>
   <div id="editor-wrap">
+    <div id="fp-scroller">
     <div id="canvas-wrap">
       <div id="no-plan">Kein Raumplan vorhanden.<br>Bitte ein Bild hochladen.</div>
       <img id="plan-img" style="display:none" alt="Raumplan">
+    </div>
     </div>
     <div id="props-panel" style="display:none">
       <h3>Tisch bearbeiten</h3>
@@ -178,8 +187,12 @@
         <input type="text" id="prop-name" placeholder="z.B. Tisch 1">
       </div>
       <div class="form-group">
-        <label>Plätze</label>
+        <label>Max. Plätze (Kapazität)</label>
         <input type="number" id="prop-capacity" min="1" max="30" value="4">
+      </div>
+      <div class="form-group">
+        <label>Min. Personen (Pflicht)</label>
+        <input type="number" id="prop-min-capacity" min="1" max="30" value="1">
       </div>
       <div class="form-group">
         <label>Max. Reservierungsdauer (Minuten)</label>
@@ -357,6 +370,15 @@ const fileInput = document.getElementById('file-input');
 const planImg = document.getElementById('plan-img');
 const noPlan = document.getElementById('no-plan');
 const canvasWrap = document.getElementById('canvas-wrap');
+const fpScroller = document.getElementById('fp-scroller');
+
+function applyZoom() {
+  const z = parseInt(document.getElementById('fp-zoom').value);
+  document.getElementById('fp-zoom-label').textContent = z + '%';
+  canvasWrap.style.width = z + '%';
+  fpScroller.style.minWidth = '280px';
+}
+document.getElementById('fp-zoom').addEventListener('input', applyZoom);
 
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -415,6 +437,7 @@ function selectTable(id) {
   document.getElementById('props-panel').style.display = 'block';
   document.getElementById('prop-name').value = t.name;
   document.getElementById('prop-capacity').value = t.capacity;
+  document.getElementById('prop-min-capacity').value = t.min_capacity ?? 1;
   document.getElementById('prop-duration').value = t.max_duration_minutes;
   document.getElementById('prop-shape').value = t.shape;
 }
@@ -440,7 +463,7 @@ canvasWrap.addEventListener('click', (e) => {
   const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
   const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
   const newT = { id: crypto.randomUUID(), name: `Tisch ${tables.length + 1}`,
-                 x: parseFloat(x), y: parseFloat(y), capacity: 4, max_duration_minutes: 120, shape: 'circle' };
+                 x: parseFloat(x), y: parseFloat(y), capacity: 4, min_capacity: 1, max_duration_minutes: 120, shape: 'circle' };
   tables.push(newT);
   addingMode = false;
   canvasWrap.classList.remove('adding');
@@ -476,8 +499,10 @@ document.getElementById('props-apply-btn').addEventListener('click', () => {
   if (!t) return;
   t.name = document.getElementById('prop-name').value.trim() || t.name;
   t.capacity = parseInt(document.getElementById('prop-capacity').value) || 4;
+  t.min_capacity = Math.min(parseInt(document.getElementById('prop-min-capacity').value) || 1, t.capacity);
   t.max_duration_minutes = parseInt(document.getElementById('prop-duration').value) || 120;
   t.shape = document.getElementById('prop-shape').value;
+  document.getElementById('prop-min-capacity').value = t.min_capacity;
   renderTables();
   selectTable(t.id);
   showToast('Tisch aktualisiert');
