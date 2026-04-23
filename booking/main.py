@@ -15,7 +15,7 @@ from typing import Optional
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "lacupa-secret-key-2024")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "lacupa2024")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "DerGrind1!")
 DATA_DIR = Path("/data")
 UPLOAD_DIR = DATA_DIR / "uploads"
 DB_PATH = DATA_DIR / "booking.db"
@@ -35,6 +35,22 @@ def get_db():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def hash_password(password: str) -> str:
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 260000)
+    return salt.hex() + ':' + key.hex()
+
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        salt_hex, key_hex = stored.split(':', 1)
+        salt = bytes.fromhex(salt_hex)
+        key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 260000)
+        return hmac.compare_digest(key.hex(), key_hex)
+    except Exception:
+        return False
 
 
 def init_db():
@@ -66,8 +82,25 @@ def init_db():
             key TEXT PRIMARY KEY,
             value TEXT
         );
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'staff',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL
+        );
     """)
     conn.commit()
+    # Seed initial superadmin from env vars only when no users exist
+    count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if count == 0:
+        conn.execute(
+            "INSERT INTO users(id,username,password_hash,role,is_active,created_at) VALUES(?,?,?,?,1,?)",
+            (str(uuid.uuid4()), ADMIN_USERNAME, hash_password(ADMIN_PASSWORD), 'superadmin',
+             datetime.utcnow().isoformat())
+        )
+        conn.commit()
     conn.close()
 
 
@@ -76,34 +109,34 @@ init_db()
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-def make_token(username: str) -> str:
+def make_token(username: str, role: str) -> str:
     expires = (datetime.utcnow() + timedelta(hours=8)).isoformat()
-    payload = f"{username}|{expires}"
+    payload = f"{username}|{role}|{expires}"
     sig = hmac.new(SECRET_KEY.encode(), payload.encode(), digestmod=hashlib.sha256).hexdigest()
     return base64.urlsafe_b64encode(f"{payload}|{sig}".encode()).decode()
 
 
-def verify_token(token: str) -> Optional[str]:
+def verify_token(token: str) -> Optional[dict]:
     try:
         raw = base64.urlsafe_b64decode(token + "==").decode()
         parts = raw.split("|")
-        if len(parts) != 3:
+        if len(parts) != 4:
             return None
-        username, expires, sig = parts
-        payload = f"{username}|{expires}"
+        username, role, expires, sig = parts
+        payload = f"{username}|{role}|{expires}"
         expected = hmac.new(SECRET_KEY.encode(), payload.encode(), digestmod=hashlib.sha256).hexdigest()
         if not hmac.compare_digest(sig, expected):
             return None
         if datetime.fromisoformat(expires) < datetime.utcnow():
             return None
-        return username
+        return {"username": username, "role": role}
     except Exception:
         return None
 
 
-def is_admin(request: Request) -> bool:
+def get_session(request: Request) -> Optional[dict]:
     token = request.cookies.get("admin_token")
-    return bool(token and verify_token(token))
+    return verify_token(token) if token else None
 
 
 # ── Customer routes ───────────────────────────────────────────────────────────
@@ -196,19 +229,22 @@ async def create_reservation(request: Request):
     return {"id": res_id, "end_time": end_dt.strftime("%H:%M")}
 
 
-# ── Admin routes ──────────────────────────────────────────────────────────────
+# ── Admin auth routes ─────────────────────────────────────────────────────────
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, error: str = None):
-    if is_admin(request):
+    if get_session(request):
         return RedirectResponse("/admin", status_code=302)
     return templates.TemplateResponse("login.html", {"request": request, "error": error})
 
 
 @app.post("/login")
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-        token = make_token(username)
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE username=? AND is_active=1", (username,)).fetchone()
+    db.close()
+    if user and verify_password(password, user['password_hash']):
+        token = make_token(username, user['role'])
         resp = RedirectResponse("/admin", status_code=302)
         resp.set_cookie("admin_token", token, httponly=True, max_age=28800)
         return resp
@@ -227,15 +263,22 @@ async def logout():
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    if not is_admin(request):
+    session = get_session(request)
+    if not session:
         return RedirectResponse("/login", status_code=302)
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "current_user": session,
+    })
 
+
+# ── Admin: floor plan ─────────────────────────────────────────────────────────
 
 @app.post("/admin/api/floor-plan")
 async def upload_floor_plan(request: Request, file: UploadFile = File(...)):
-    if not is_admin(request):
-        raise HTTPException(401)
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
     ext = Path(file.filename).suffix.lower()
     if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
         raise HTTPException(400, "Ungültiges Dateiformat")
@@ -251,8 +294,9 @@ async def upload_floor_plan(request: Request, file: UploadFile = File(...)):
 
 @app.get("/admin/api/tables")
 async def get_tables(request: Request):
-    if not is_admin(request):
-        raise HTTPException(401)
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
     db = get_db()
     rows = db.execute("SELECT * FROM tables").fetchall()
     db.close()
@@ -261,8 +305,9 @@ async def get_tables(request: Request):
 
 @app.post("/admin/api/tables")
 async def save_tables(request: Request):
-    if not is_admin(request):
-        raise HTTPException(401)
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
     tables = await request.json()
     db = get_db()
     db.execute("DELETE FROM tables")
@@ -278,9 +323,11 @@ async def save_tables(request: Request):
     return {"saved": len(tables)}
 
 
+# ── Admin: reservations ───────────────────────────────────────────────────────
+
 @app.get("/admin/api/reservations")
 async def get_reservations(request: Request, date: str = None):
-    if not is_admin(request):
+    if not get_session(request):
         raise HTTPException(401)
     db = get_db()
     if date:
@@ -302,7 +349,7 @@ async def get_reservations(request: Request, date: str = None):
 
 @app.put("/admin/api/reservations/{res_id}")
 async def update_reservation(res_id: str, request: Request):
-    if not is_admin(request):
+    if not get_session(request):
         raise HTTPException(401)
     data = await request.json()
     db = get_db()
@@ -314,10 +361,139 @@ async def update_reservation(res_id: str, request: Request):
 
 @app.delete("/admin/api/reservations/{res_id}")
 async def delete_reservation(res_id: str, request: Request):
-    if not is_admin(request):
+    if not get_session(request):
         raise HTTPException(401)
     db = get_db()
     db.execute("DELETE FROM reservations WHERE id=?", (res_id,))
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+
+# ── Admin: user management (superadmin only) ──────────────────────────────────
+
+@app.get("/admin/api/users")
+async def get_users(request: Request):
+    session = get_session(request)
+    if not session or session['role'] != 'superadmin':
+        raise HTTPException(403)
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, username, role, is_active, created_at FROM users ORDER BY created_at"
+    ).fetchall()
+    db.close()
+    return [dict(r) for r in rows]
+
+
+@app.post("/admin/api/users")
+async def create_user(request: Request):
+    session = get_session(request)
+    if not session or session['role'] != 'superadmin':
+        raise HTTPException(403)
+    data = await request.json()
+    username = data.get('username', '').strip().replace('|', '')
+    password = data.get('password', '')
+    role = data.get('role', 'staff')
+    if not username or not password:
+        raise HTTPException(400, "Benutzername und Passwort erforderlich")
+    if role not in ('superadmin', 'admin', 'staff'):
+        raise HTTPException(400, "Ungültige Rolle")
+    if len(password) < 8:
+        raise HTTPException(400, "Passwort muss mindestens 8 Zeichen lang sein")
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO users(id,username,password_hash,role,is_active,created_at) VALUES(?,?,?,?,1,?)",
+            (str(uuid.uuid4()), username, hash_password(password), role, datetime.utcnow().isoformat())
+        )
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.close()
+        raise HTTPException(409, "Benutzername bereits vergeben")
+    db.close()
+    return {"ok": True}
+
+
+@app.put("/admin/api/users/{user_id}")
+async def update_user(user_id: str, request: Request):
+    session = get_session(request)
+    if not session or session['role'] != 'superadmin':
+        raise HTTPException(403)
+    db = get_db()
+    target = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    if not target:
+        db.close()
+        raise HTTPException(404, "Benutzer nicht gefunden")
+    if target['username'] == session['username']:
+        db.close()
+        raise HTTPException(400, "Eigenes Konto über die Kontoeinstellungen bearbeiten")
+    data = await request.json()
+    updates, params = [], []
+    if 'role' in data:
+        if data['role'] not in ('superadmin', 'admin', 'staff'):
+            db.close()
+            raise HTTPException(400, "Ungültige Rolle")
+        updates.append("role=?")
+        params.append(data['role'])
+    if 'is_active' in data:
+        updates.append("is_active=?")
+        params.append(1 if data['is_active'] else 0)
+    if data.get('password'):
+        if len(data['password']) < 8:
+            db.close()
+            raise HTTPException(400, "Passwort muss mindestens 8 Zeichen lang sein")
+        updates.append("password_hash=?")
+        params.append(hash_password(data['password']))
+    if not updates:
+        db.close()
+        raise HTTPException(400, "Keine Änderungen")
+    params.append(user_id)
+    db.execute(f"UPDATE users SET {', '.join(updates)} WHERE id=?", params)
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+
+@app.delete("/admin/api/users/{user_id}")
+async def delete_user(user_id: str, request: Request):
+    session = get_session(request)
+    if not session or session['role'] != 'superadmin':
+        raise HTTPException(403)
+    db = get_db()
+    target = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    if not target:
+        db.close()
+        raise HTTPException(404, "Benutzer nicht gefunden")
+    if target['username'] == session['username']:
+        db.close()
+        raise HTTPException(400, "Eigenes Konto kann nicht gelöscht werden")
+    db.execute("DELETE FROM users WHERE id=?", (user_id,))
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+
+# ── Admin: own account ────────────────────────────────────────────────────────
+
+@app.post("/admin/api/account/password")
+async def change_own_password(request: Request):
+    session = get_session(request)
+    if not session:
+        raise HTTPException(401)
+    data = await request.json()
+    current_pw = data.get('current_password', '')
+    new_pw = data.get('new_password', '')
+    if not current_pw or not new_pw:
+        raise HTTPException(400, "Aktuelles und neues Passwort erforderlich")
+    if len(new_pw) < 8:
+        raise HTTPException(400, "Neues Passwort muss mindestens 8 Zeichen lang sein")
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE username=?", (session['username'],)).fetchone()
+    if not user or not verify_password(current_pw, user['password_hash']):
+        db.close()
+        raise HTTPException(400, "Aktuelles Passwort falsch")
+    db.execute("UPDATE users SET password_hash=? WHERE username=?",
+               (hash_password(new_pw), session['username']))
     db.commit()
     db.close()
     return {"ok": True}

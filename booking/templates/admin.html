@@ -8,15 +8,18 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Segoe UI',Arial,sans-serif;background:#f0ede8;min-height:100vh;color:#2c2c2c}
   header{background:#2d4a1e;color:#fff;display:flex;align-items:center;justify-content:space-between;
-         padding:0.9rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-  header h1{font-size:1.15rem;font-style:italic;letter-spacing:0.04em}
+         padding:0.9rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.2);gap:1rem}
+  header h1{font-size:1.1rem;font-style:italic;letter-spacing:0.04em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .header-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+  .header-user{font-size:0.8rem;opacity:0.8;white-space:nowrap}
   .logout-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
-              color:#fff;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;
-              transition:background .2s}
+              color:#fff;padding:0.4rem 0.9rem;border-radius:6px;cursor:pointer;font-size:0.82rem;
+              transition:background .2s;white-space:nowrap}
   .logout-btn:hover{background:rgba(255,255,255,0.25)}
-  .tabs{display:flex;background:#fff;border-bottom:2px solid #e0dbd0;padding:0 1.5rem}
-  .tab{padding:0.85rem 1.5rem;border:none;background:none;cursor:pointer;font-size:0.92rem;
-       color:#777;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;font-family:inherit}
+  .tabs{display:flex;background:#fff;border-bottom:2px solid #e0dbd0;padding:0 1rem;overflow-x:auto}
+  .tab{padding:0.85rem 1.2rem;border:none;background:none;cursor:pointer;font-size:0.88rem;
+       color:#777;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;
+       font-family:inherit;white-space:nowrap}
   .tab.active{color:#2d4a1e;border-bottom-color:#2d4a1e;font-weight:600}
   .tab-content{display:none;padding:1.5rem}
   .tab-content.active{display:block}
@@ -34,7 +37,7 @@
   .btn-sm{padding:0.35rem 0.75rem;font-size:0.8rem}
   .toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:0.85rem 1.5rem;border-radius:10px;
          font-size:0.9rem;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:9999;
-         transform:translateY(100px);transition:transform .3s;pointer-events:none}
+         transform:translateY(100px);transition:transform .3s;pointer-events:none;max-width:300px}
   .toast.show{transform:translateY(0)}
   .toast.success{background:#2d4a1e;color:#fff}
   .toast.error{background:#c0392b;color:#fff}
@@ -42,18 +45,16 @@
   /* Floor plan editor */
   #editor-wrap{display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap}
   #canvas-wrap{position:relative;flex:1 1 300px;min-width:280px;border-radius:10px;
-               overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#ddd;
-               cursor:default}
+               overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);background:#ddd;cursor:default}
   #canvas-wrap.adding{cursor:crosshair}
   #plan-img{width:100%;height:auto;display:block;user-select:none;pointer-events:none}
   #no-plan{display:flex;align-items:center;justify-content:center;height:200px;
            color:#888;font-size:0.95rem;text-align:center;padding:1rem}
   .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
-             transform:translate(-50%,-50%);cursor:grab;
-             display:flex;align-items:center;justify-content:center;
-             font-size:0.65rem;font-weight:700;color:#fff;text-align:center;line-height:1.2;
-             box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:box-shadow .2s;user-select:none;
-             border:2.5px solid rgba(255,255,255,0.5)}
+             transform:translate(-50%,-50%);cursor:grab;display:flex;align-items:center;
+             justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;text-align:center;
+             line-height:1.2;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:box-shadow .2s;
+             user-select:none;border:2.5px solid rgba(255,255,255,0.5)}
   .table-dot.rect{border-radius:8px}
   .table-dot:hover{box-shadow:0 4px 16px rgba(0,0,0,0.35)}
   .table-dot.selected{border:3px solid #fff;box-shadow:0 0 0 3px #c8a96e,0 4px 16px rgba(0,0,0,0.3)}
@@ -83,15 +84,42 @@
   .res-info strong{color:#333}
   .res-actions{display:flex;gap:0.4rem;margin-top:0.8rem;flex-wrap:wrap}
   .no-res{text-align:center;color:#888;padding:2rem;font-size:0.9rem}
-
   input[type=date],input[type=file]{font-family:inherit;padding:0.48rem 0.7rem;border:1.5px solid #e0e0e0;
                                     border-radius:7px;font-size:0.88rem;outline:none}
   input[type=date]:focus{border-color:#2d4a1e}
+
+  /* Users */
+  .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.8rem;margin-top:1rem}
+  .user-card{background:#fff;border-radius:10px;padding:1.1rem;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
+  .user-card-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.7rem;flex-wrap:wrap}
+  .user-name{font-weight:600;color:#2d4a1e;font-size:1rem}
+  .role-badge{font-size:0.72rem;padding:0.18rem 0.55rem;border-radius:20px;font-weight:600}
+  .role-superadmin{background:#2d4a1e;color:#fff}
+  .role-admin{background:#5a8a2d;color:#fff}
+  .role-staff{background:#c8a96e;color:#fff}
+  .status-active{font-size:0.72rem;padding:0.18rem 0.55rem;border-radius:20px;background:#e8f5e9;color:#2d6a2d;font-weight:600}
+  .status-inactive{font-size:0.72rem;padding:0.18rem 0.55rem;border-radius:20px;background:#fdf2f2;color:#c0392b;font-weight:600}
+  .user-actions{display:flex;gap:0.4rem;flex-wrap:wrap}
+
+  /* New user / account forms */
+  .form-card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 12px rgba(0,0,0,0.08);max-width:420px}
+  .form-card h3{font-size:1rem;color:#2d4a1e;margin-bottom:1.2rem;padding-bottom:0.6rem;border-bottom:2px solid #f0ede8}
+  .form-card .form-group input,.form-card .form-group select{padding:0.6rem 0.8rem}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;
+                 align-items:center;justify-content:center;z-index:1000;padding:1rem}
+  .modal{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:380px;
+         box-shadow:0 8px 40px rgba(0,0,0,0.25)}
+  .modal h3{font-size:1rem;color:#2d4a1e;margin-bottom:1.2rem;padding-bottom:0.6rem;border-bottom:2px solid #f0ede8}
+  .modal-actions{display:flex;gap:0.5rem;margin-top:1.2rem}
+
   @media(max-width:600px){
-    .res-grid{grid-template-columns:1fr}
+    .res-grid,.users-grid{grid-template-columns:1fr}
     #props-panel{max-width:100%;width:100%}
     #editor-wrap{flex-direction:column}
-    .tab{padding:0.7rem 1rem;font-size:0.85rem}
+    .tab{padding:0.7rem 0.9rem;font-size:0.82rem}
+    header h1{font-size:0.95rem}
   }
 </style>
 </head>
@@ -99,17 +127,33 @@
 
 <header>
   <h1>La Cupa – Buchungsverwaltung</h1>
-  <form method="post" action="/admin/logout">
-    <button class="logout-btn" type="submit">Abmelden</button>
-  </form>
+  <div class="header-right">
+    <span class="header-user">{{ current_user.username }}
+      {% if current_user.role == 'superadmin' %}(Superadmin)
+      {% elif current_user.role == 'admin' %}(Admin)
+      {% else %}(Mitarbeiter){% endif %}
+    </span>
+    <form method="post" action="/admin/logout">
+      <button class="logout-btn" type="submit">Abmelden</button>
+    </form>
+  </div>
 </header>
 
 <div class="tabs">
+  {% if current_user.role in ['superadmin', 'admin'] %}
   <button class="tab active" data-tab="floorplan">🗺 Raumplan</button>
   <button class="tab" data-tab="reservations">📋 Reservierungen</button>
+  {% else %}
+  <button class="tab active" data-tab="reservations">📋 Reservierungen</button>
+  {% endif %}
+  {% if current_user.role == 'superadmin' %}
+  <button class="tab" data-tab="users">👥 Benutzer</button>
+  {% endif %}
+  <button class="tab" data-tab="account">🔑 Konto</button>
 </div>
 
 <!-- Floor Plan Tab -->
+{% if current_user.role in ['superadmin', 'admin'] %}
 <div class="tab-content active" id="floorplan-tab">
   <div class="toolbar">
     <label class="btn btn-secondary" style="cursor:pointer">
@@ -119,17 +163,14 @@
     <button class="btn btn-accent" id="add-table-btn">＋ Tisch hinzufügen</button>
     <button class="btn btn-primary" id="save-btn">💾 Layout speichern</button>
     <span id="add-hint" style="display:none;font-size:0.82rem;color:#c8a96e;font-style:italic">
-      Klicke auf den Plan um einen Tisch zu platzieren – oder Escape zum Abbrechen
+      Klicke auf den Plan um einen Tisch zu platzieren – Escape zum Abbrechen
     </span>
   </div>
-
   <div id="editor-wrap">
     <div id="canvas-wrap">
       <div id="no-plan">Kein Raumplan vorhanden.<br>Bitte ein Bild hochladen.</div>
       <img id="plan-img" style="display:none" alt="Raumplan">
-      <!-- table dots injected here -->
     </div>
-
     <div id="props-panel" style="display:none">
       <h3>Tisch bearbeiten</h3>
       <div class="form-group">
@@ -158,9 +199,10 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Reservations Tab -->
-<div class="tab-content" id="reservations-tab">
+<div class="tab-content {% if current_user.role == 'staff' %}active{% endif %}" id="reservations-tab">
   <div class="toolbar date-filter">
     <input type="date" id="date-filter" value="">
     <button class="btn btn-primary" id="filter-btn">Filtern</button>
@@ -169,18 +211,116 @@
   <div id="res-list" class="res-grid"></div>
 </div>
 
+<!-- Users Tab (superadmin only) -->
+{% if current_user.role == 'superadmin' %}
+<div class="tab-content" id="users-tab">
+  <div class="toolbar">
+    <button class="btn btn-accent" id="new-user-toggle">＋ Neuer Benutzer</button>
+  </div>
+
+  <div class="form-card" id="new-user-form" style="display:none;margin-bottom:1.2rem">
+    <h3>Neuer Benutzer</h3>
+    <div class="form-group">
+      <label>Benutzername</label>
+      <input type="text" id="new-username" placeholder="benutzername" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Passwort (min. 8 Zeichen)</label>
+      <input type="password" id="new-password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Rolle</label>
+      <select id="new-role">
+        <option value="staff">Mitarbeiter – nur Reservierungen sehen</option>
+        <option value="admin">Admin – Raumplan + Reservierungen</option>
+        <option value="superadmin">Superadmin – alles inkl. Benutzerverwaltung</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:0.5rem">
+      <button class="btn btn-primary" onclick="createUser()">Erstellen</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('new-user-form').style.display='none'">Abbrechen</button>
+    </div>
+  </div>
+
+  <div id="users-list" class="users-grid"></div>
+</div>
+{% endif %}
+
+<!-- Account Tab (all roles) -->
+<div class="tab-content" id="account-tab">
+  <div class="form-card" style="margin-bottom:1rem">
+    <h3>Mein Konto</h3>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem">
+      <span style="font-weight:600;font-size:1.05rem">{{ current_user.username }}</span>
+      <span class="role-badge role-{{ current_user.role }}">
+        {% if current_user.role == 'superadmin' %}Superadmin
+        {% elif current_user.role == 'admin' %}Admin
+        {% else %}Mitarbeiter{% endif %}
+      </span>
+    </div>
+    <p style="font-size:0.82rem;color:#888;margin-top:0.3rem">Session läuft 8 Stunden nach der Anmeldung ab.</p>
+  </div>
+
+  <div class="form-card">
+    <h3>Passwort ändern</h3>
+    <div class="form-group">
+      <label>Aktuelles Passwort</label>
+      <input type="password" id="cur-pw" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="form-group">
+      <label>Neues Passwort (min. 8 Zeichen)</label>
+      <input type="password" id="new-pw" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Neues Passwort bestätigen</label>
+      <input type="password" id="confirm-pw" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary" onclick="changeOwnPassword()">Passwort ändern</button>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay" id="edit-modal" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <h3>Benutzer bearbeiten</h3>
+    <input type="hidden" id="edit-user-id">
+    <div style="font-size:0.9rem;color:#555;margin-bottom:1rem" id="edit-user-label"></div>
+    <div class="form-group">
+      <label>Rolle</label>
+      <select id="edit-role">
+        <option value="staff">Mitarbeiter</option>
+        <option value="admin">Admin</option>
+        <option value="superadmin">Superadmin</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="edit-active">
+        <option value="1">Aktiv</option>
+        <option value="0">Inaktiv (kann sich nicht einloggen)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Neues Passwort (leer = unverändert)</label>
+      <input type="password" id="edit-password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" style="flex:1" onclick="saveUserEdit()">Speichern</button>
+      <button class="btn btn-secondary" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let tables = [];
-let selectedId = null;
-let addingMode = false;
-let dragging = null;
-let dragStart = null;
-const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
-
-function tableColor(idx) { return COLORS[idx % COLORS.length]; }
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
@@ -190,18 +330,29 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
     if (btn.dataset.tab === 'reservations') loadReservations();
+    if (btn.dataset.tab === 'users') loadUsers();
   });
 });
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
+// ── Initialization ────────────────────────────────────────────────────────────
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date-filter').value = today;
 
-// ── Floor plan image ──────────────────────────────────────────────────────────
+{% if current_user.role in ['superadmin', 'admin'] %}
+loadState();
+{% else %}
+loadReservations(today);
+{% endif %}
+
+// ── Floor plan ────────────────────────────────────────────────────────────────
+{% if current_user.role in ['superadmin', 'admin'] %}
+let tables = [];
+let selectedId = null;
+let addingMode = false;
+let dragId = null, dragOffX = 0, dragOffY = 0;
+const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
+function tableColor(idx) { return COLORS[idx % COLORS.length]; }
+
 const fileInput = document.getElementById('file-input');
 const planImg = document.getElementById('plan-img');
 const noPlan = document.getElementById('no-plan');
@@ -228,19 +379,14 @@ function showPlanImg(url) {
   noPlan.style.display = 'none';
 }
 
-// ── Load initial state ────────────────────────────────────────────────────────
 async function loadState() {
   const r = await fetch('/admin/api/tables');
-  tables = await r.ok ? r.json() : [];
-
+  tables = r.ok ? await r.json() : [];
   const fp = await fetch('/booking/api/floor-plan').then(r => r.json());
   if (fp.floor_plan_url) showPlanImg(fp.floor_plan_url + '?t=' + Date.now());
   renderTables();
 }
 
-loadState();
-
-// ── Render tables on canvas ───────────────────────────────────────────────────
 function renderTables() {
   document.querySelectorAll('.table-dot').forEach(el => el.remove());
   tables.forEach((t, idx) => {
@@ -251,14 +397,12 @@ function renderTables() {
     dot.style.top = t.y + '%';
     dot.style.background = tableColor(idx);
     dot.innerHTML = `<span style="padding:0 2px">${t.name}<br><small style="opacity:.75">${t.capacity}P</small></span>`;
-
     dot.addEventListener('pointerdown', (e) => {
       if (addingMode) return;
       e.stopPropagation();
       selectTable(t.id);
       startDrag(e, t.id);
     });
-
     canvasWrap.appendChild(dot);
   });
 }
@@ -275,12 +419,8 @@ function selectTable(id) {
   document.getElementById('prop-shape').value = t.shape;
 }
 
-// ── Add table mode ────────────────────────────────────────────────────────────
 document.getElementById('add-table-btn').addEventListener('click', () => {
-  if (planImg.style.display === 'none') {
-    showToast('Bitte zuerst einen Raumplan hochladen', 'error');
-    return;
-  }
+  if (planImg.style.display === 'none') { showToast('Bitte zuerst einen Raumplan hochladen', 'error'); return; }
   addingMode = true;
   canvasWrap.classList.add('adding');
   document.getElementById('add-hint').style.display = 'inline';
@@ -299,12 +439,8 @@ canvasWrap.addEventListener('click', (e) => {
   const rect = canvasWrap.getBoundingClientRect();
   const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
   const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
-  const newT = {
-    id: crypto.randomUUID(),
-    name: `Tisch ${tables.length + 1}`,
-    x: parseFloat(x), y: parseFloat(y),
-    capacity: 4, max_duration_minutes: 120, shape: 'circle'
-  };
+  const newT = { id: crypto.randomUUID(), name: `Tisch ${tables.length + 1}`,
+                 x: parseFloat(x), y: parseFloat(y), capacity: 4, max_duration_minutes: 120, shape: 'circle' };
   tables.push(newT);
   addingMode = false;
   canvasWrap.classList.remove('adding');
@@ -313,15 +449,10 @@ canvasWrap.addEventListener('click', (e) => {
   selectTable(newT.id);
 });
 
-// ── Drag & drop tables ────────────────────────────────────────────────────────
-let dragId = null;
-let dragOffX = 0, dragOffY = 0;
-
 function startDrag(e, id) {
   dragId = id;
   const dot = document.querySelector(`.table-dot[data-id="${id}"]`);
   const dotRect = dot.getBoundingClientRect();
-  const wrapRect = canvasWrap.getBoundingClientRect();
   dragOffX = e.clientX - dotRect.left - dotRect.width / 2;
   dragOffY = e.clientY - dotRect.top - dotRect.height / 2;
   dot.setPointerCapture(e.pointerId);
@@ -330,10 +461,8 @@ function startDrag(e, id) {
 document.addEventListener('pointermove', (e) => {
   if (!dragId) return;
   const wrapRect = canvasWrap.getBoundingClientRect();
-  let x = ((e.clientX - dragOffX - wrapRect.left) / wrapRect.width * 100);
-  let y = ((e.clientY - dragOffY - wrapRect.top) / wrapRect.height * 100);
-  x = Math.max(2, Math.min(98, x));
-  y = Math.max(2, Math.min(98, y));
+  let x = Math.max(2, Math.min(98, (e.clientX - dragOffX - wrapRect.left) / wrapRect.width * 100));
+  let y = Math.max(2, Math.min(98, (e.clientY - dragOffY - wrapRect.top) / wrapRect.height * 100));
   const dot = document.querySelector(`.table-dot[data-id="${dragId}"]`);
   if (dot) { dot.style.left = x + '%'; dot.style.top = y + '%'; }
   const t = tables.find(t => t.id === dragId);
@@ -342,7 +471,6 @@ document.addEventListener('pointermove', (e) => {
 
 document.addEventListener('pointerup', () => { dragId = null; });
 
-// ── Props panel ───────────────────────────────────────────────────────────────
 document.getElementById('props-apply-btn').addEventListener('click', () => {
   const t = tables.find(x => x.id === selectedId);
   if (!t) return;
@@ -363,34 +491,26 @@ document.getElementById('props-delete-btn').addEventListener('click', () => {
   showToast('Tisch gelöscht');
 });
 
-// ── Save layout ───────────────────────────────────────────────────────────────
 document.getElementById('save-btn').addEventListener('click', async () => {
   const r = await fetch('/admin/api/tables', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(tables)
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(tables)
   });
   if (r.ok) showToast(`Layout gespeichert (${tables.length} Tische)`);
   else showToast('Fehler beim Speichern', 'error');
 });
+{% endif %}
 
 // ── Reservations ──────────────────────────────────────────────────────────────
-const today = new Date().toISOString().split('T')[0];
-document.getElementById('date-filter').value = today;
-
 async function loadReservations(date) {
-  const url = date ? `/admin/api/reservations?date=${date}` : '/admin/api/reservations';
+  const d = date !== undefined ? date : document.getElementById('date-filter').value || null;
+  const url = d ? `/admin/api/reservations?date=${d}` : '/admin/api/reservations';
   const r = await fetch(url);
-  const data = await r.json();
-  renderReservations(data);
+  renderReservations(await r.json());
 }
 
 function renderReservations(data) {
   const el = document.getElementById('res-list');
-  if (!data.length) {
-    el.innerHTML = '<div class="no-res">Keine Reservierungen für diesen Zeitraum.</div>';
-    return;
-  }
+  if (!data.length) { el.innerHTML = '<div class="no-res">Keine Reservierungen für diesen Zeitraum.</div>'; return; }
   el.innerHTML = data.map(res => {
     const start = new Date(res.start_datetime);
     const end = new Date(res.end_datetime);
@@ -398,8 +518,7 @@ function renderReservations(data) {
     const fmtDate = d => d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
     const statusClass = res.status === 'confirmed' ? 'status-confirmed' : 'status-cancelled';
     const statusLabel = res.status === 'confirmed' ? 'Bestätigt' : 'Storniert';
-    return `
-    <div class="res-card" id="res-${res.id}">
+    return `<div class="res-card" id="res-${res.id}">
       <div class="res-card-header">
         <div class="res-table-name">🪑 ${res.table_name}</div>
         <span class="res-status ${statusClass}">${statusLabel}</span>
@@ -411,9 +530,9 @@ function renderReservations(data) {
       <div class="res-info">👥 ${res.guest_count} Gäste</div>
       ${res.notes ? `<div class="res-info" style="font-style:italic;color:#888">„${res.notes}"</div>` : ''}
       <div class="res-actions">
-        ${res.status === 'confirmed' ?
-          `<button class="btn btn-secondary btn-sm" onclick="updateRes('${res.id}','cancelled')">Stornieren</button>` :
-          `<button class="btn btn-primary btn-sm" onclick="updateRes('${res.id}','confirmed')">Wiederherstellen</button>`}
+        ${res.status === 'confirmed'
+          ? `<button class="btn btn-secondary btn-sm" onclick="updateRes('${res.id}','cancelled')">Stornieren</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="updateRes('${res.id}','confirmed')">Wiederherstellen</button>`}
         <button class="btn btn-danger btn-sm" onclick="deleteRes('${res.id}')">Löschen</button>
       </div>
     </div>`;
@@ -422,27 +541,153 @@ function renderReservations(data) {
 
 async function updateRes(id, status) {
   await fetch(`/admin/api/reservations/${id}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({status})
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status})
   });
-  const date = document.getElementById('date-filter').value || null;
-  loadReservations(date);
+  loadReservations();
 }
 
 async function deleteRes(id) {
   if (!confirm('Reservierung unwiderruflich löschen?')) return;
   await fetch(`/admin/api/reservations/${id}`, {method:'DELETE'});
-  const date = document.getElementById('date-filter').value || null;
-  loadReservations(date);
+  loadReservations();
 }
 
-document.getElementById('filter-btn').addEventListener('click', () => {
-  loadReservations(document.getElementById('date-filter').value || null);
-});
+document.getElementById('filter-btn').addEventListener('click', () => loadReservations());
 document.getElementById('all-btn').addEventListener('click', () => {
   document.getElementById('date-filter').value = '';
   loadReservations(null);
 });
+
+// ── User management ───────────────────────────────────────────────────────────
+{% if current_user.role == 'superadmin' %}
+const currentUsername = {{ current_user.username | tojson }};
+
+document.getElementById('new-user-toggle').addEventListener('click', () => {
+  const f = document.getElementById('new-user-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if (f.style.display === 'block') document.getElementById('new-username').focus();
+});
+
+async function loadUsers() {
+  const r = await fetch('/admin/api/users');
+  if (!r.ok) return;
+  renderUsers(await r.json());
+}
+
+function roleName(role) {
+  return {superadmin:'Superadmin', admin:'Admin', staff:'Mitarbeiter'}[role] || role;
+}
+
+function renderUsers(data) {
+  const el = document.getElementById('users-list');
+  if (!data.length) { el.innerHTML = '<div class="no-res">Keine Benutzer gefunden.</div>'; return; }
+  el.innerHTML = data.map(u => {
+    const isSelf = u.username === currentUsername;
+    const createdDate = new Date(u.created_at).toLocaleDateString('de-DE');
+    return `<div class="user-card" id="ucard-${u.id}">
+      <div class="user-card-header">
+        <span class="user-name">${u.username}</span>
+        <span class="role-badge role-${u.role}">${roleName(u.role)}</span>
+        <span class="${u.is_active ? 'status-active' : 'status-inactive'}">${u.is_active ? 'Aktiv' : 'Inaktiv'}</span>
+        ${isSelf ? '<span style="font-size:0.72rem;color:#888">(ich)</span>' : ''}
+      </div>
+      <div style="font-size:0.8rem;color:#999;margin-bottom:0.7rem">Erstellt: ${createdDate}</div>
+      <div class="user-actions">
+        ${!isSelf ? `
+          <button class="btn btn-secondary btn-sm" onclick="openEditModal('${u.id}','${u.username}','${u.role}',${u.is_active})">Bearbeiten</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${u.username}')">Löschen</button>
+        ` : '<span style="font-size:0.8rem;color:#888">Eigenes Konto → Konto-Tab</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function createUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  if (!username || !password) { showToast('Benutzername und Passwort erforderlich', 'error'); return; }
+  const r = await fetch('/admin/api/users', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username, password, role})
+  });
+  const data = await r.json();
+  if (r.ok) {
+    showToast('Benutzer erstellt');
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('new-user-form').style.display = 'none';
+    loadUsers();
+  } else {
+    showToast(data.detail || 'Fehler', 'error');
+  }
+}
+
+function openEditModal(id, username, role, isActive) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-user-label').textContent = `Benutzer: ${username}`;
+  document.getElementById('edit-role').value = role;
+  document.getElementById('edit-active').value = isActive ? '1' : '0';
+  document.getElementById('edit-password').value = '';
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+
+async function saveUserEdit() {
+  const id = document.getElementById('edit-user-id').value;
+  const payload = {
+    role: document.getElementById('edit-role').value,
+    is_active: document.getElementById('edit-active').value === '1',
+  };
+  const pw = document.getElementById('edit-password').value;
+  if (pw) payload.password = pw;
+  const r = await fetch(`/admin/api/users/${id}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  const data = await r.json();
+  if (r.ok) {
+    showToast('Benutzer gespeichert');
+    closeEditModal();
+    loadUsers();
+  } else {
+    showToast(data.detail || 'Fehler', 'error');
+  }
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`Benutzer „${username}" unwiderruflich löschen?`)) return;
+  const r = await fetch(`/admin/api/users/${id}`, {method:'DELETE'});
+  const data = await r.json();
+  if (r.ok) { showToast('Benutzer gelöscht'); loadUsers(); }
+  else showToast(data.detail || 'Fehler', 'error');
+}
+{% endif %}
+
+// ── Own account password change ───────────────────────────────────────────────
+async function changeOwnPassword() {
+  const curPw = document.getElementById('cur-pw').value;
+  const newPw = document.getElementById('new-pw').value;
+  const confirmPw = document.getElementById('confirm-pw').value;
+  if (!curPw || !newPw) { showToast('Alle Felder ausfüllen', 'error'); return; }
+  if (newPw !== confirmPw) { showToast('Neue Passwörter stimmen nicht überein', 'error'); return; }
+  if (newPw.length < 8) { showToast('Passwort muss mindestens 8 Zeichen lang sein', 'error'); return; }
+  const r = await fetch('/admin/api/account/password', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({current_password: curPw, new_password: newPw})
+  });
+  const data = await r.json();
+  if (r.ok) {
+    showToast('Passwort erfolgreich geändert');
+    document.getElementById('cur-pw').value = '';
+    document.getElementById('new-pw').value = '';
+    document.getElementById('confirm-pw').value = '';
+  } else {
+    showToast(data.detail || 'Fehler', 'error');
+  }
+}
 </script>
 </body>
 </html>
