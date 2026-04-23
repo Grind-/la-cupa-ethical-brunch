@@ -64,7 +64,9 @@ def init_db():
             capacity INTEGER NOT NULL DEFAULT 4,
             min_capacity INTEGER NOT NULL DEFAULT 1,
             max_duration_minutes INTEGER NOT NULL DEFAULT 120,
-            shape TEXT NOT NULL DEFAULT 'circle'
+            shape TEXT NOT NULL DEFAULT 'circle',
+            width REAL NOT NULL DEFAULT 5,
+            height REAL NOT NULL DEFAULT 5
         );
         CREATE TABLE IF NOT EXISTS reservations (
             id TEXT PRIMARY KEY,
@@ -91,6 +93,13 @@ def init_db():
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS daily_layouts (
+            date TEXT NOT NULL,
+            table_id TEXT NOT NULL,
+            x REAL NOT NULL,
+            y REAL NOT NULL,
+            PRIMARY KEY (date, table_id)
+        );
     """)
     conn.commit()
     # Migrate: add min_capacity column if missing (existing DBs)
@@ -99,6 +108,13 @@ def init_db():
         conn.commit()
     except Exception:
         pass
+    # Migrate: add width/height columns if missing
+    for col in [("width", "REAL", "5"), ("height", "REAL", "5")]:
+        try:
+            conn.execute(f"ALTER TABLE tables ADD COLUMN {col[0]} {col[1]} NOT NULL DEFAULT {col[2]}")
+            conn.commit()
+        except Exception:
+            pass
     # Seed initial superadmin from env vars only when no users exist
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
@@ -161,14 +177,22 @@ async def booking_page(request: Request):
 
 
 @app.get("/booking/api/floor-plan")
-async def api_floor_plan():
+async def api_floor_plan(date: str = None):
     db = get_db()
     fp = db.execute("SELECT value FROM settings WHERE key='floor_plan'").fetchone()
-    tables = db.execute("SELECT * FROM tables").fetchall()
+    rows = db.execute("SELECT * FROM tables").fetchall()
+    tables = [dict(t) for t in rows]
+    if date:
+        layout_rows = db.execute("SELECT * FROM daily_layouts WHERE date=?", (date,)).fetchall()
+        overrides = {r["table_id"]: {"x": r["x"], "y": r["y"]} for r in layout_rows}
+        for t in tables:
+            if t["id"] in overrides:
+                t["x"] = overrides[t["id"]]["x"]
+                t["y"] = overrides[t["id"]]["y"]
     db.close()
     return {
         "floor_plan_url": f"/uploads/{fp['value']}" if fp else None,
-        "tables": [dict(t) for t in tables],
+        "tables": tables,
     }
 
 
@@ -181,6 +205,8 @@ async def api_availability(date: str, start_time: str):
 
     db = get_db()
     tables = db.execute("SELECT * FROM tables").fetchall()
+    layout_rows = db.execute("SELECT * FROM daily_layouts WHERE date=?", (date,)).fetchall()
+    overrides = {r["table_id"]: {"x": r["x"], "y": r["y"]} for r in layout_rows}
     result = []
     for t in tables:
         end_dt = start_dt + timedelta(minutes=t["max_duration_minutes"])
@@ -190,6 +216,9 @@ async def api_availability(date: str, start_time: str):
             (t["id"], end_dt.isoformat(), start_dt.isoformat()),
         ).fetchone()
         td = dict(t)
+        if td["id"] in overrides:
+            td["x"] = overrides[td["id"]]["x"]
+            td["y"] = overrides[td["id"]]["y"]
         td["available"] = conflict is None
         result.append(td)
     db.close()
@@ -321,14 +350,59 @@ async def save_tables(request: Request):
     for t in tables:
         t.setdefault("id", str(uuid.uuid4()))
         t.setdefault("min_capacity", 1)
+        t.setdefault("width", 5)
+        t.setdefault("height", 5)
         db.execute(
-            "INSERT OR REPLACE INTO tables(id,name,x,y,capacity,min_capacity,max_duration_minutes,shape)"
-            " VALUES(:id,:name,:x,:y,:capacity,:min_capacity,:max_duration_minutes,:shape)",
+            "INSERT OR REPLACE INTO tables(id,name,x,y,capacity,min_capacity,max_duration_minutes,shape,width,height)"
+            " VALUES(:id,:name,:x,:y,:capacity,:min_capacity,:max_duration_minutes,:shape,:width,:height)",
             t,
         )
     db.commit()
     db.close()
     return {"saved": len(tables)}
+
+
+# ── Admin: daily layouts ──────────────────────────────────────────────────────
+
+@app.get("/admin/api/layout/{date}")
+async def get_daily_layout(date: str, request: Request):
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
+    db = get_db()
+    rows = db.execute("SELECT * FROM daily_layouts WHERE date=?", (date,)).fetchall()
+    db.close()
+    return {r["table_id"]: {"x": r["x"], "y": r["y"]} for r in rows}
+
+
+@app.post("/admin/api/layout/{date}")
+async def save_daily_layout(date: str, request: Request):
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
+    positions = await request.json()  # {table_id: {x, y}}
+    db = get_db()
+    db.execute("DELETE FROM daily_layouts WHERE date=?", (date,))
+    for table_id, pos in positions.items():
+        db.execute(
+            "INSERT INTO daily_layouts(date, table_id, x, y) VALUES(?,?,?,?)",
+            (date, table_id, pos["x"], pos["y"]),
+        )
+    db.commit()
+    db.close()
+    return {"saved": len(positions)}
+
+
+@app.delete("/admin/api/layout/{date}")
+async def delete_daily_layout(date: str, request: Request):
+    session = get_session(request)
+    if not session or session['role'] not in ('superadmin', 'admin'):
+        raise HTTPException(403)
+    db = get_db()
+    db.execute("DELETE FROM daily_layouts WHERE date=?", (date,))
+    db.commit()
+    db.close()
+    return {"ok": True}
 
 
 # ── Admin: reservations ───────────────────────────────────────────────────────

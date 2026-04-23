@@ -51,12 +51,17 @@
   #plan-img{width:100%;height:auto;display:block;user-select:none;pointer-events:none}
   #no-plan{display:flex;align-items:center;justify-content:center;height:200px;
            color:#888;font-size:0.95rem;text-align:center;padding:1rem}
-  .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
+  .table-dot{position:absolute;border-radius:50%;
              transform:translate(-50%,-50%);cursor:grab;display:flex;align-items:center;
-             justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;text-align:center;
-             line-height:1.2;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:box-shadow .2s;
+             justify-content:center;overflow:hidden;
+             box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:box-shadow .2s;
              user-select:none;border:2.5px solid rgba(255,255,255,0.5)}
   .table-dot.rect{border-radius:8px}
+  .resize-handle{position:absolute;bottom:-4px;right:-4px;width:13px;height:13px;
+                 background:rgba(255,255,255,0.92);border-radius:3px;cursor:se-resize;
+                 border:1px solid rgba(0,0,0,0.3);pointer-events:all;z-index:5;
+                 display:flex;align-items:center;justify-content:center;font-size:8px;color:#555}
+  .resize-handle::after{content:'⇲'}
   .table-dot:hover{box-shadow:0 4px 16px rgba(0,0,0,0.35)}
   .table-dot.selected{border:3px solid #fff;box-shadow:0 0 0 3px #c8a96e,0 4px 16px rgba(0,0,0,0.3)}
   .table-dot:active{cursor:grabbing}
@@ -162,16 +167,26 @@
       <input type="file" id="file-input" accept="image/*" style="display:none">
     </label>
     <button class="btn btn-accent" id="add-table-btn">＋ Tisch hinzufügen</button>
-    <button class="btn btn-primary" id="save-btn">💾 Layout speichern</button>
+    <button class="btn btn-primary" id="save-btn">💾 Basis-Layout speichern</button>
     <span id="add-hint" style="display:none;font-size:0.82rem;color:#c8a96e;font-style:italic">
       Klicke auf den Plan um einen Tisch zu platzieren – Escape zum Abbrechen
     </span>
+    <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
+      <label style="font-size:0.8rem;color:#777;white-space:nowrap">📅 Tages-Layout:</label>
+      <input type="date" id="layout-date-input" style="padding:0.38rem 0.5rem;border:1.5px solid #e0e0e0;border-radius:6px;font-size:0.82rem;font-family:inherit;outline:none">
+      <button class="btn btn-secondary btn-sm" id="load-layout-btn">Laden</button>
+    </div>
     <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto">
       <label style="font-size:0.8rem;color:#777;white-space:nowrap">Zoom:</label>
       <input type="range" id="fp-zoom" min="30" max="300" value="100" step="5" style="width:110px">
       <span id="fp-zoom-label" style="font-size:0.8rem;min-width:3rem;color:#555">100%</span>
       <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fp-zoom').value=100;applyZoom()">↺</button>
     </div>
+  </div>
+  <div id="date-mode-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:0.5rem 1rem;margin-bottom:0.5rem;font-size:0.85rem;color:#856404;align-items:center;gap:0.5rem;flex-wrap:wrap">
+    📅 Tages-Layout für <strong id="banner-date"></strong> — Tische verschieben, dann speichern.
+    <button class="btn btn-secondary btn-sm" id="back-to-base-btn" style="margin-left:0.4rem">← Zur Basis</button>
+    <button class="btn btn-danger btn-sm" id="delete-daily-btn">Tages-Layout löschen</button>
   </div>
   <div id="editor-wrap">
     <div id="fp-scroller">
@@ -204,6 +219,17 @@
           <option value="circle">Rund</option>
           <option value="rect">Eckig</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>Breite (% des Plans)</label>
+        <input type="number" id="prop-width" min="1" max="50" step="0.5" value="5">
+      </div>
+      <div class="form-group">
+        <label>Höhe (% des Plans)</label>
+        <input type="number" id="prop-height" min="1" max="50" step="0.5" value="5">
+      </div>
+      <div id="date-mode-note" style="display:none;background:#fff3cd;border-radius:6px;padding:0.4rem 0.6rem;font-size:0.78rem;color:#856404;margin-bottom:0.5rem">
+        Tages-Modus: nur Positionen verschiebbar.
       </div>
       <div class="props-actions">
         <button class="btn btn-primary" style="flex:1" id="props-apply-btn">Übernehmen</button>
@@ -363,6 +389,9 @@ let tables = [];
 let selectedId = null;
 let addingMode = false;
 let dragId = null, dragOffX = 0, dragOffY = 0;
+let resizeId = null;
+let layoutDate = null; // null = base mode, string = date mode
+
 const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
 function tableColor(idx) { return COLORS[idx % COLORS.length]; }
 
@@ -404,9 +433,38 @@ function showPlanImg(url) {
 async function loadState() {
   const r = await fetch('/admin/api/tables');
   tables = r.ok ? await r.json() : [];
+  tables.forEach(t => { t.width = t.width || 5; t.height = t.height || 5; });
   const fp = await fetch('/booking/api/floor-plan').then(r => r.json());
   if (fp.floor_plan_url) showPlanImg(fp.floor_plan_url + '?t=' + Date.now());
   renderTables();
+}
+
+async function applyDailyOverlay(date) {
+  const r = await fetch(`/admin/api/layout/${date}`);
+  if (!r.ok) return;
+  const positions = await r.json();
+  tables.forEach(t => {
+    if (positions[t.id]) { t.x = positions[t.id].x; t.y = positions[t.id].y; }
+  });
+}
+
+function setDateMode(date) {
+  layoutDate = date;
+  const banner = document.getElementById('date-mode-banner');
+  const saveBtn = document.getElementById('save-btn');
+  if (date) {
+    const d = new Date(date + 'T12:00:00');
+    document.getElementById('banner-date').textContent =
+      d.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+    banner.style.display = 'flex';
+    saveBtn.textContent = '💾 Tages-Layout speichern';
+  } else {
+    banner.style.display = 'none';
+    saveBtn.textContent = '💾 Basis-Layout speichern';
+    document.getElementById('layout-date-input').value = '';
+  }
+  renderTables();
+  if (selectedId) selectTable(selectedId);
 }
 
 function renderTables() {
@@ -417,14 +475,27 @@ function renderTables() {
     dot.dataset.id = t.id;
     dot.style.left = t.x + '%';
     dot.style.top = t.y + '%';
+    dot.style.width = (t.width || 5) + '%';
+    dot.style.height = (t.height || 5) + '%';
     dot.style.background = tableColor(idx);
-    dot.innerHTML = `<span style="padding:0 2px">${t.name}<br><small style="opacity:.75">${t.capacity}P</small></span>`;
+    dot.innerHTML = `<span style="padding:0 3px;font-size:0.65rem;font-weight:700;color:#fff;line-height:1.2;text-align:center;pointer-events:none">${t.name}<br><small style="opacity:.75">${t.capacity}P</small></span>`;
     dot.addEventListener('pointerdown', (e) => {
       if (addingMode) return;
       e.stopPropagation();
       selectTable(t.id);
       startDrag(e, t.id);
     });
+    if (!layoutDate) {
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      handle.title = 'Größe ändern';
+      handle.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        selectTable(t.id);
+        startResize(e, t.id);
+      });
+      dot.appendChild(handle);
+    }
     canvasWrap.appendChild(dot);
   });
 }
@@ -440,9 +511,19 @@ function selectTable(id) {
   document.getElementById('prop-min-capacity').value = t.min_capacity ?? 1;
   document.getElementById('prop-duration').value = t.max_duration_minutes;
   document.getElementById('prop-shape').value = t.shape;
+  document.getElementById('prop-width').value = t.width || 5;
+  document.getElementById('prop-height').value = t.height || 5;
+  const dateMode = !!layoutDate;
+  ['prop-capacity','prop-min-capacity','prop-duration','prop-shape','prop-width','prop-height'].forEach(id => {
+    document.getElementById(id).disabled = dateMode;
+  });
+  document.getElementById('props-apply-btn').style.display = dateMode ? 'none' : 'block';
+  document.getElementById('props-delete-btn').style.display = dateMode ? 'none' : 'block';
+  document.getElementById('date-mode-note').style.display = dateMode ? 'block' : 'none';
 }
 
 document.getElementById('add-table-btn').addEventListener('click', () => {
+  if (layoutDate) { showToast('Im Tages-Layout keine neuen Tische möglich', 'error'); return; }
   if (planImg.style.display === 'none') { showToast('Bitte zuerst einen Raumplan hochladen', 'error'); return; }
   addingMode = true;
   canvasWrap.classList.add('adding');
@@ -463,7 +544,8 @@ canvasWrap.addEventListener('click', (e) => {
   const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
   const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
   const newT = { id: crypto.randomUUID(), name: `Tisch ${tables.length + 1}`,
-                 x: parseFloat(x), y: parseFloat(y), capacity: 4, min_capacity: 1, max_duration_minutes: 120, shape: 'circle' };
+                 x: parseFloat(x), y: parseFloat(y), capacity: 4, min_capacity: 1,
+                 max_duration_minutes: 120, shape: 'circle', width: 5, height: 5 };
   tables.push(newT);
   addingMode = false;
   canvasWrap.classList.remove('adding');
@@ -476,23 +558,43 @@ function startDrag(e, id) {
   dragId = id;
   const dot = document.querySelector(`.table-dot[data-id="${id}"]`);
   const dotRect = dot.getBoundingClientRect();
-  dragOffX = e.clientX - dotRect.left - dotRect.width / 2;
-  dragOffY = e.clientY - dotRect.top - dotRect.height / 2;
+  dragOffX = e.clientX - (dotRect.left + dotRect.width / 2);
+  dragOffY = e.clientY - (dotRect.top + dotRect.height / 2);
   dot.setPointerCapture(e.pointerId);
 }
 
+function startResize(e, id) {
+  resizeId = id;
+  e.currentTarget.setPointerCapture(e.pointerId);
+}
+
 document.addEventListener('pointermove', (e) => {
-  if (!dragId) return;
-  const wrapRect = canvasWrap.getBoundingClientRect();
-  let x = Math.max(2, Math.min(98, (e.clientX - dragOffX - wrapRect.left) / wrapRect.width * 100));
-  let y = Math.max(2, Math.min(98, (e.clientY - dragOffY - wrapRect.top) / wrapRect.height * 100));
-  const dot = document.querySelector(`.table-dot[data-id="${dragId}"]`);
-  if (dot) { dot.style.left = x + '%'; dot.style.top = y + '%'; }
-  const t = tables.find(t => t.id === dragId);
-  if (t) { t.x = parseFloat(x.toFixed(2)); t.y = parseFloat(y.toFixed(2)); }
+  if (dragId) {
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    let x = Math.max(2, Math.min(98, (e.clientX - dragOffX - wrapRect.left) / wrapRect.width * 100));
+    let y = Math.max(2, Math.min(98, (e.clientY - dragOffY - wrapRect.top) / wrapRect.height * 100));
+    const dot = document.querySelector(`.table-dot[data-id="${dragId}"]`);
+    if (dot) { dot.style.left = x + '%'; dot.style.top = y + '%'; }
+    const t = tables.find(t => t.id === dragId);
+    if (t) { t.x = parseFloat(x.toFixed(2)); t.y = parseFloat(y.toFixed(2)); }
+  } else if (resizeId) {
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const t = tables.find(t => t.id === resizeId);
+    if (!t) return;
+    const mxPct = (e.clientX - wrapRect.left) / wrapRect.width * 100;
+    const myPct = (e.clientY - wrapRect.top) / wrapRect.height * 100;
+    t.width = parseFloat(Math.max(2, Math.min(50, (mxPct - t.x) * 2)).toFixed(2));
+    t.height = parseFloat(Math.max(2, Math.min(50, (myPct - t.y) * 2)).toFixed(2));
+    const dot = document.querySelector(`.table-dot[data-id="${resizeId}"]`);
+    if (dot) { dot.style.width = t.width + '%'; dot.style.height = t.height + '%'; }
+    if (selectedId === resizeId) {
+      document.getElementById('prop-width').value = t.width;
+      document.getElementById('prop-height').value = t.height;
+    }
+  }
 });
 
-document.addEventListener('pointerup', () => { dragId = null; });
+document.addEventListener('pointerup', () => { dragId = null; resizeId = null; });
 
 document.getElementById('props-apply-btn').addEventListener('click', () => {
   const t = tables.find(x => x.id === selectedId);
@@ -502,6 +604,8 @@ document.getElementById('props-apply-btn').addEventListener('click', () => {
   t.min_capacity = Math.min(parseInt(document.getElementById('prop-min-capacity').value) || 1, t.capacity);
   t.max_duration_minutes = parseInt(document.getElementById('prop-duration').value) || 120;
   t.shape = document.getElementById('prop-shape').value;
+  t.width = parseFloat(document.getElementById('prop-width').value) || 5;
+  t.height = parseFloat(document.getElementById('prop-height').value) || 5;
   document.getElementById('prop-min-capacity').value = t.min_capacity;
   renderTables();
   selectTable(t.id);
@@ -509,6 +613,7 @@ document.getElementById('props-apply-btn').addEventListener('click', () => {
 });
 
 document.getElementById('props-delete-btn').addEventListener('click', () => {
+  if (layoutDate) return;
   tables = tables.filter(t => t.id !== selectedId);
   selectedId = null;
   document.getElementById('props-panel').style.display = 'none';
@@ -517,11 +622,44 @@ document.getElementById('props-delete-btn').addEventListener('click', () => {
 });
 
 document.getElementById('save-btn').addEventListener('click', async () => {
-  const r = await fetch('/admin/api/tables', {
-    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(tables)
-  });
-  if (r.ok) showToast(`Layout gespeichert (${tables.length} Tische)`);
-  else showToast('Fehler beim Speichern', 'error');
+  if (layoutDate) {
+    const positions = {};
+    tables.forEach(t => { positions[t.id] = {x: t.x, y: t.y}; });
+    const r = await fetch(`/admin/api/layout/${layoutDate}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(positions)
+    });
+    if (r.ok) showToast(`Tages-Layout für ${layoutDate} gespeichert`);
+    else showToast('Fehler beim Speichern', 'error');
+  } else {
+    const r = await fetch('/admin/api/tables', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(tables)
+    });
+    if (r.ok) showToast(`Basis-Layout gespeichert (${tables.length} Tische)`);
+    else showToast('Fehler beim Speichern', 'error');
+  }
+});
+
+document.getElementById('load-layout-btn').addEventListener('click', async () => {
+  const date = document.getElementById('layout-date-input').value;
+  if (!date) { showToast('Bitte ein Datum wählen', 'error'); return; }
+  const r = await fetch('/admin/api/tables');
+  tables = r.ok ? await r.json() : [];
+  tables.forEach(t => { t.width = t.width || 5; t.height = t.height || 5; });
+  await applyDailyOverlay(date);
+  setDateMode(date);
+  showToast(`Tages-Layout für ${date} geladen`);
+});
+
+document.getElementById('back-to-base-btn').addEventListener('click', () => {
+  setDateMode(null);
+  loadState();
+});
+
+document.getElementById('delete-daily-btn').addEventListener('click', async () => {
+  if (!layoutDate || !confirm(`Tages-Layout für ${layoutDate} wirklich löschen?`)) return;
+  const r = await fetch(`/admin/api/layout/${layoutDate}`, {method: 'DELETE'});
+  if (r.ok) { showToast('Tages-Layout gelöscht'); setDateMode(null); loadState(); }
+  else showToast('Fehler beim Löschen', 'error');
 });
 {% endif %}
 

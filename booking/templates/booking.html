@@ -39,9 +39,9 @@
   #fp-scroller{overflow:auto;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)}
   #canvas-wrap{position:relative;width:100%;background:#e8e4de}
   #plan-img{width:100%;height:auto;display:block}
-  .table-dot{position:absolute;width:48px;height:48px;border-radius:50%;
+  .table-dot{position:absolute;border-radius:50%;
              transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
-             font-size:0.62rem;font-weight:700;color:#fff;text-align:center;line-height:1.2;
+             overflow:hidden;
              box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:transform .2s,box-shadow .2s;
              border:2.5px solid rgba(255,255,255,0.4);cursor:default}
   .table-dot.rect{border-radius:8px}
@@ -208,11 +208,16 @@ function applyZoom() {
 }
 
 async function loadTables() {
-  const r = await fetch('/booking/api/floor-plan');
+  const date = document.getElementById('pick-date').value;
+  const r = await fetch(`/booking/api/floor-plan${date ? '?date=' + date : ''}`);
   const d = await r.json();
   tables = d.tables || [];
   renderTables('neutral');
 }
+
+document.getElementById('pick-date').addEventListener('change', () => {
+  if (hasPlan) loadTables();
+});
 
 // ── Render tables ─────────────────────────────────────────────────────────────
 const COLORS = ['#2d6a4f','#3d7a5e','#5a4a8a','#8a4a2d','#2d4a8a','#8a2d4a','#4a8a2d','#8a6a2d'];
@@ -223,7 +228,9 @@ function renderTables(mode, availData) {
   if (!wrap) return;
   document.querySelectorAll('.table-dot').forEach(el => el.remove());
 
-  tables.forEach((t, idx) => {
+  const source = (mode === 'avail' && availData) ? availData : tables;
+
+  source.forEach((t, idx) => {
     const dot = document.createElement('div');
     let cls = 'table-dot' + (t.shape === 'rect' ? ' rect' : '');
     let color = '';
@@ -232,9 +239,8 @@ function renderTables(mode, availData) {
     if (mode === 'neutral') {
       cls += ' neutral';
       color = '#7a7a6a';
-    } else if (availData) {
-      const ad = availData.find(a => a.id === t.id);
-      if (ad && ad.available) { cls += ' available'; color = '#2d7d4a'; available = true; }
+    } else if (mode === 'avail') {
+      if (t.available) { cls += ' available'; color = '#2d7d4a'; available = true; }
       else { cls += ' reserved'; color = '#b0392b'; }
     }
 
@@ -242,8 +248,10 @@ function renderTables(mode, availData) {
     dot.dataset.id = t.id;
     dot.style.left = t.x + '%';
     dot.style.top = t.y + '%';
+    dot.style.width = (t.width || 5) + '%';
+    dot.style.height = (t.height || 5) + '%';
     dot.style.background = color;
-    dot.innerHTML = `<span style="padding:0 2px">${t.name}<br><small style="opacity:.8">${t.capacity}P</small></span>`;
+    dot.innerHTML = `<span style="padding:0 2px;font-size:0.62rem;font-weight:700;line-height:1.2;text-align:center">${t.name}<br><small style="opacity:.8">${t.capacity}P</small></span>`;
 
     if (available) {
       dot.addEventListener('click', () => openModal(t));
